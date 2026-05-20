@@ -1,0 +1,111 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+  PARENT
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
+  createdAt DateTime @default(now())
+}
+
+model Teacher {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  subject   String
+  classId   Int?
+  class     Class?   @relation(fields: [classId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Notice {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  postedBy  String
+  createdAt DateTime @default(now())
+}
+
+model Fee {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  amount    Float
+  paid      Boolean  @default(false)
+  dueDate   DateTime
+  paidAt    DateTime?
+
+  @@index([studentId])
+}
+
+model Class {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  teacher   String
+  createdAt DateTime  @default(now())
+  students  Student[]
+  teachers  Teacher[]
+}
+
+model Student {
+  id          Int          @id @default(autoincrement())
+  name        String
+  classId     Int
+  class       Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  gradeAvg    Float        @default(0)
+  parentEmail String?
+  phone       String?
+  address     String?
+  createdAt   DateTime     @default(now())
+  attendances Attendance[]
+  grades      Grade[]
+  fees        Fee[]
+
+  @@index([classId])
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  late
+}
+
+model Attendance {
+  id        Int              @id @default(autoincrement())
+  studentId Int
+  student   Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date      DateTime
+  status    AttendanceStatus
+  createdAt DateTime         @default(now())
+
+  @@unique([studentId, date])
+  @@index([studentId])
+}
+
+model Grade {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject   String
+  score     Float
+  examDate  DateTime
+
+  @@index([studentId])
+}

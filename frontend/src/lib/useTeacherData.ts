@@ -1,0 +1,99 @@
+/**
+ * Shared hook to cache teacher class info in sessionStorage.
+ * Eliminates the waterfall API call on every teacher page.
+ */
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { API_BASE_URL } from "@/lib/config";
+
+interface TeacherClassInfo {
+  teacherId: number;
+  teacherName: string;
+  subject: string;
+  classId: number;
+  className: string;
+}
+
+const CACHE_KEY = "edunexus_teacher_class";
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCached(): TeacherClassInfo | null {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const { data, ts } = JSON.parse(raw);
+    if (Date.now() - ts > CACHE_TTL) {
+      sessionStorage.removeItem(CACHE_KEY);
+      return null;
+    }
+    return data as TeacherClassInfo;
+  } catch {
+    return null;
+  }
+}
+
+function setCache(data: TeacherClassInfo) {
+  sessionStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
+}
+
+export function useTeacherData() {
+  const router = useRouter();
+  const [info, setInfo] = useState<TeacherClassInfo | null>(getCached);
+  const [isLoading, setIsLoading] = useState(!getCached());
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchInfo = useCallback(async () => {
+    // If we already have cached data, don't show loading
+    const cached = getCached();
+    if (cached) {
+      setInfo(cached);
+      setIsLoading(false);
+    }
+
+    try {
+      const token = localStorage.getItem("edunexus_token");
+      if (!token) { router.push("/login"); return; }
+
+      const res = await fetch(`${API_BASE_URL}/dashboard/teacher-stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.status === 401) {
+        localStorage.removeItem("edunexus_token");
+        router.push("/login");
+        return;
+      }
+
+      if (!res.ok) throw new Error("Failed to load teacher info");
+
+      const data = await res.json();
+      if (data.assignedClass && data.teacher) {
+        const classInfo: TeacherClassInfo = {
+          teacherId: data.teacher.id,
+          teacherName: data.teacher.name,
+          subject: data.teacher.subject,
+          classId: data.assignedClass.id,
+          className: data.assignedClass.name,
+        };
+        setCache(classInfo);
+        setInfo(classInfo);
+      } else {
+        setError("You are not assigned to any class.");
+      }
+    } catch (err: any) {
+      if (!cached) {
+        setError(err.message || "Failed to load teacher info.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [router]);
+
+  useEffect(() => { fetchInfo(); }, [fetchInfo]);
+
+  return { info, isLoading, error, refetch: fetchInfo };
+}
+
+export function getToken() {
+  return localStorage.getItem("edunexus_token");
+}

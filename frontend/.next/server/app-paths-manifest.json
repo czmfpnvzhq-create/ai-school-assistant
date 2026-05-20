@@ -1,0 +1,11 @@
+{
+  "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/dashboard/admin/students/page": "app/dashboard/admin/students/page.js",
+  "/dashboard/admin/classes/page": "app/dashboard/admin/classes/page.js",
+  "/dashboard/chat/page": "app/dashboard/chat/page.js",
+  "/dashboard/admin/notices/page": "app/dashboard/admin/notices/page.js",
+  "/dashboard/teacher/page": "app/dashboard/teacher/page.js",
+  "/dashboard/teacher/grades/page": "app/dashboard/teacher/grades/page.js",
+  "/dashboard/teacher/attendance/page": "app/dashboard/teacher/attendance/page.js",
+  "/dashboard/teacher/notices/page": "app/dashboard/teacher/notices/page.js"
+}
