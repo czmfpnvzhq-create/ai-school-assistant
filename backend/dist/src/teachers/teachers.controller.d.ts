@@ -14,8 +14,8 @@ export declare class TeachersController {
         email: string;
         name: string;
         createdAt: Date;
-        classId: number | null;
         subject: string;
+        classId: number | null;
     })[]>;
     create(body: any): Promise<{
         class: {
@@ -29,8 +29,8 @@ export declare class TeachersController {
         email: string;
         name: string;
         createdAt: Date;
-        classId: number | null;
         subject: string;
+        classId: number | null;
     }>;
     update(id: number, body: any): Promise<{
         class: {
@@ -44,8 +44,8 @@ export declare class TeachersController {
         email: string;
         name: string;
         createdAt: Date;
-        classId: number | null;
         subject: string;
+        classId: number | null;
     }>;
     delete(id: number): Promise<{
         success: boolean;

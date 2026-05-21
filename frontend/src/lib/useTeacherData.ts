@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { API_BASE_URL } from "@/lib/config";
+import { apiGet } from "@/lib/api/client";
 
 interface TeacherClassInfo {
   teacherId: number;
@@ -38,8 +38,8 @@ function setCache(data: TeacherClassInfo) {
 
 export function useTeacherData() {
   const router = useRouter();
-  const [info, setInfo] = useState<TeacherClassInfo | null>(getCached);
-  const [isLoading, setIsLoading] = useState(!getCached());
+  const [info, setInfo] = useState<TeacherClassInfo | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchInfo = useCallback(async () => {
@@ -54,19 +54,10 @@ export function useTeacherData() {
       const token = localStorage.getItem("edunexus_token");
       if (!token) { router.push("/login"); return; }
 
-      const res = await fetch(`${API_BASE_URL}/dashboard/teacher-stats`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.status === 401) {
-        localStorage.removeItem("edunexus_token");
-        router.push("/login");
-        return;
-      }
-
-      if (!res.ok) throw new Error("Failed to load teacher info");
-
-      const data = await res.json();
+      const data = await apiGet<{
+        teacher: { id: number; name: string; subject: string };
+        assignedClass: { id: number; name: string } | null;
+      }>("/dashboard/teacher-stats", { ttlMs: 30_000 });
       if (data.assignedClass && data.teacher) {
         const classInfo: TeacherClassInfo = {
           teacherId: data.teacher.id,
@@ -89,7 +80,14 @@ export function useTeacherData() {
     }
   }, [router]);
 
-  useEffect(() => { fetchInfo(); }, [fetchInfo]);
+  useEffect(() => {
+    const cached = getCached();
+    if (cached) {
+      setInfo(cached);
+      setIsLoading(false);
+    }
+    fetchInfo();
+  }, [fetchInfo]);
 
   return { info, isLoading, error, refetch: fetchInfo };
 }

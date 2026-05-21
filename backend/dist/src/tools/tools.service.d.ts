@@ -17,6 +17,11 @@ export declare class ToolsService {
         name: string;
         gradeAvg: number;
     }[] | {
+        id: number;
+        title: string;
+        postedBy: string;
+        date: string;
+    }[] | {
         error: string;
         success?: undefined;
         data?: undefined;
@@ -25,6 +30,11 @@ export declare class ToolsService {
         className?: undefined;
         totalStudents?: undefined;
         averageGrade?: undefined;
+        totalFees?: undefined;
+        collectedAmount?: undefined;
+        pendingAmount?: undefined;
+        pendingRecords?: undefined;
+        collectionRatePercent?: undefined;
     } | {
         success: boolean;
         data: never[];
@@ -34,6 +44,11 @@ export declare class ToolsService {
         className?: undefined;
         totalStudents?: undefined;
         averageGrade?: undefined;
+        totalFees?: undefined;
+        collectedAmount?: undefined;
+        pendingAmount?: undefined;
+        pendingRecords?: undefined;
+        collectionRatePercent?: undefined;
     } | {
         success: boolean;
         student: {
@@ -47,6 +62,11 @@ export declare class ToolsService {
         className?: undefined;
         totalStudents?: undefined;
         averageGrade?: undefined;
+        totalFees?: undefined;
+        collectedAmount?: undefined;
+        pendingAmount?: undefined;
+        pendingRecords?: undefined;
+        collectionRatePercent?: undefined;
     } | {
         className: string;
         totalStudents: number;
@@ -56,5 +76,24 @@ export declare class ToolsService {
         data?: undefined;
         message?: undefined;
         student?: undefined;
+        totalFees?: undefined;
+        collectedAmount?: undefined;
+        pendingAmount?: undefined;
+        pendingRecords?: undefined;
+        collectionRatePercent?: undefined;
+    } | {
+        totalFees: number;
+        collectedAmount: number;
+        pendingAmount: number;
+        pendingRecords: number;
+        collectionRatePercent: number;
+        error?: undefined;
+        success?: undefined;
+        data?: undefined;
+        message?: undefined;
+        student?: undefined;
+        className?: undefined;
+        totalStudents?: undefined;
+        averageGrade?: undefined;
     }>;
 }

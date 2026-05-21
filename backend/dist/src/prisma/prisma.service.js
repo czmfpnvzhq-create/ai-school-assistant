@@ -21,7 +21,12 @@ let PrismaService = class PrismaService extends client_1.PrismaClient {
         if (!connectionString) {
             throw new Error('DATABASE_URL is not defined in the environment.');
         }
-        const pool = new pg_1.Pool({ connectionString });
+        const pool = new pg_1.Pool({
+            connectionString,
+            max: 10,
+            idleTimeoutMillis: 30_000,
+            connectionTimeoutMillis: 5_000,
+        });
         const adapter = new adapter_pg_1.PrismaPg(pool);
         super({ adapter });
         this.pool = pool;

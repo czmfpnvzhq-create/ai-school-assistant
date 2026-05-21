@@ -155,6 +155,49 @@ let ToolsService = class ToolsService {
                         averageGrade: stats._avg.gradeAvg ? parseFloat(stats._avg.gradeAvg.toFixed(2)) : 0,
                     };
                 }
+                case "get_fee_report": {
+                    const [collectedAgg, pendingAgg, pendingCount, totalCount] = await Promise.all([
+                        this.prisma.fee.aggregate({
+                            where: { paid: true },
+                            _sum: { amount: true },
+                        }),
+                        this.prisma.fee.aggregate({
+                            where: { paid: false },
+                            _sum: { amount: true },
+                        }),
+                        this.prisma.fee.count({ where: { paid: false } }),
+                        this.prisma.fee.count(),
+                    ]);
+                    const collected = collectedAgg._sum.amount ?? 0;
+                    const pending = pendingAgg._sum.amount ?? 0;
+                    const total = collected + pending;
+                    const collectionRate = total > 0 ? parseFloat(((collected / total) * 100).toFixed(2)) : 0;
+                    return {
+                        totalFees: totalCount,
+                        collectedAmount: collected,
+                        pendingAmount: pending,
+                        pendingRecords: pendingCount,
+                        collectionRatePercent: collectionRate,
+                    };
+                }
+                case "get_notices": {
+                    const notices = await this.prisma.notice.findMany({
+                        orderBy: { createdAt: 'desc' },
+                        take: 5,
+                        select: {
+                            id: true,
+                            title: true,
+                            postedBy: true,
+                            createdAt: true,
+                        },
+                    });
+                    return notices.map((n) => ({
+                        id: n.id,
+                        title: n.title,
+                        postedBy: n.postedBy,
+                        date: n.createdAt.toISOString().split('T')[0],
+                    }));
+                }
                 default: {
                     return { error: `Unknown tool name: ${toolName}` };
                 }
