@@ -58,9 +58,9 @@ let StudentsService = class StudentsService {
             where: { id },
             include: {
                 class: true,
-                attendances: true,
-                grades: true,
-                fees: true,
+                attendances: { orderBy: { date: 'desc' }, take: 30 },
+                grades: { orderBy: { examDate: 'desc' }, take: 20 },
+                fees: { orderBy: { dueDate: 'desc' }, take: 10 },
             },
         });
         if (!student) {

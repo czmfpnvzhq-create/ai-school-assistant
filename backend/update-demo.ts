@@ -18,7 +18,20 @@ async function main() {
     where: { email: 'student@edunexus.com' },
     data: { name: 'Muhammad Hamza' }
   });
-  
+
+  // Link demo teacher to first class teacher record (for AI class context)
+  const demoTeacherRecord = await prisma.teacher.findFirst({
+    where: { classId: { not: null } },
+    orderBy: { id: 'asc' },
+  });
+  if (demoTeacherRecord) {
+    await prisma.teacher.update({
+      where: { id: demoTeacherRecord.id },
+      data: { email: 'teacher@edunexus.com' },
+    });
+    console.log(`Linked teacher@edunexus.com to ${demoTeacherRecord.name} (${demoTeacherRecord.subject})`);
+  }
+
   // Update that student's parentEmail to match the Demo Parent
   const students = await prisma.student.findMany({ where: { name: 'Muhammad Hamza' } });
   if (students.length > 0) {

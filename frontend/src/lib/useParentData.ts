@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { API_BASE_URL } from "@/lib/config";
+import { apiGet } from "@/lib/api/client";
 
 export interface ParentGrade {
   id: number;
@@ -94,37 +94,24 @@ export function useParentData() {
         if (cached) {
           setData(cached);
           setIsLoading(false);
+        } else {
+          setIsLoading(true);
         }
-      }
-
-      if (bypassCache || !getCached()) {
+      } else {
         setIsLoading(true);
       }
       setError(null);
 
       try {
-        const token = localStorage.getItem("edunexus_token");
-        if (!token) {
+        if (!localStorage.getItem("edunexus_token")) {
           router.push("/login");
           return;
         }
 
-        const res = await fetch(`${API_BASE_URL}/dashboard/parent-stats`, {
-          headers: { Authorization: `Bearer ${token}` },
+        const payload = await apiGet<ParentStats>("/dashboard/parent-stats", {
+          ttlMs: 30_000,
+          skipCache: bypassCache,
         });
-
-        if (res.status === 401) {
-          localStorage.removeItem("edunexus_token");
-          localStorage.removeItem("edunexus_user");
-          router.push("/login");
-          return;
-        }
-
-        if (!res.ok) {
-          throw new Error("Failed to fetch parent data.");
-        }
-
-        const payload: ParentStats = await res.json();
         setData(payload);
         setCache(payload);
       } catch (err: unknown) {
@@ -140,6 +127,11 @@ export function useParentData() {
   );
 
   useEffect(() => {
+    const cached = getCached();
+    if (cached) {
+      setData(cached);
+      setIsLoading(false);
+    }
     fetchStats();
   }, [fetchStats]);
 

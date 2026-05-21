@@ -1,16 +1,22 @@
 import dotenv from 'dotenv';
-import { HfInference } from '@huggingface/inference';
+import { InferenceClient } from '@huggingface/inference';
 
+dotenv.config({ path: ".env.local" });
 dotenv.config();
 
-const apiKey = process.env.HUGGINGFACE_API_KEY;
+function cleanKey(raw) {
+  if (!raw) return "";
+  return raw.trim().replace(/^["']|["']$/g, "").trim();
+}
+
+const apiKey = cleanKey(process.env.HUGGINGFACE_API_KEY);
 
 if (!apiKey || apiKey.includes("hf_YOUR_TOKEN_HERE")) {
   console.error("❌ Error: HUGGINGFACE_API_KEY is missing or invalid in your environment!");
   process.exit(1);
 }
 
-const hf = new HfInference(apiKey);
+const hf = new InferenceClient(apiKey);
 
 // We will try these highly capable free models that are typically deployed on Hugging Face Serverless Inference
 const candidateModels = [
@@ -30,6 +36,7 @@ async function runTests() {
       
       const response = await hf.chatCompletion({
         model: model,
+        provider: "hf-inference",
         messages: [
           { role: "system", content: "You are a concise school assistant." },
           { role: "user", content: "State 2 key features of an AI school assistant in one short sentence." }

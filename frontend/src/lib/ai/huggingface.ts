@@ -1,56 +1,184 @@
-import { HfInference } from "@huggingface/inference";
+import { InferenceClient } from "@huggingface/inference";
+import { assertHfApiKey, getHfApiKey } from "./get-hf-api-key";
 
-// Initialize Hugging Face Inference client with the API Key
-const apiKey = process.env.HUGGINGFACE_API_KEY;
+/** Try auto router first, then hf-inference for the same model. */
+const CHAT_MODELS: Array<{ model: string; provider?: "hf-inference" }> = [
+  { model: "Qwen/Qwen2.5-7B-Instruct" },
+  { model: "Qwen/Qwen2.5-7B-Instruct", provider: "hf-inference" },
+  { model: "meta-llama/Llama-3.2-3B-Instruct" },
+  { model: "meta-llama/Llama-3.2-3B-Instruct", provider: "hf-inference" },
+];
 
-if (!apiKey) {
-  console.warn("Warning: HUGGINGFACE_API_KEY is not defined in the environment.");
+type ChatMessage = { role: string; content: string };
+
+function createClient() {
+  const accessToken = assertHfApiKey();
+  return new InferenceClient(accessToken);
 }
 
-export const hf = new HfInference(apiKey);
+function mapHfError(err: Error): Error {
+  const msg = err.message.toLowerCase();
+
+  if (msg.includes("expired")) {
+    return new Error(
+      "Hugging Face API token has expired. Create a new token at https://huggingface.co/settings/tokens, update HUGGINGFACE_API_KEY in frontend/.env.local (no quotes), then restart npm run dev."
+    );
+  }
+
+  if (
+    msg.includes("invalid username or password") ||
+    msg.includes("invalid credentials") ||
+    msg.includes("unauthorized")
+  ) {
+    return new Error(
+      "Hugging Face rejected the API token (invalid or revoked). Create a NEW token at https://huggingface.co/settings/tokens — use a Fine-grained token with “Make calls to Inference Providers”, or a classic token with Read access. Paste it as HUGGINGFACE_API_KEY=hf_... in frontend/.env.local with NO quotes, then restart npm run dev."
+    );
+  }
+
+  if (!getHfApiKey()) {
+    return new Error(
+      "Hugging Face API key is missing. Set HUGGINGFACE_API_KEY in frontend/.env.local and restart the dev server."
+    );
+  }
+
+  return err;
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 /**
- * Sends a conversation chat history to the Hugging Face Inference API
- * using the Mistral-7B-Instruct-v0.3 model with strict prompt formatting.
- * 
- * @param messages List of conversation messages (system, user, assistant).
+ * Streams the final assistant reply token-by-token via Hugging Face chatCompletionStream.
+ * Falls back to askAI + word simulation if streaming is unavailable.
  */
-export async function askAI(messages: { role: string; content: string }[], retries = 3): Promise<string> {
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      const response = await hf.chatCompletion({
-        model: "Qwen/Qwen2.5-7B-Instruct",
-        messages: messages,
-        max_tokens: 500,
-        temperature: 0.1, // Set to 0.1 for high determinism in simulated tool calling
-      });
+export async function* streamAI(
+  messages: ChatMessage[],
+  retries = 2
+): AsyncGenerator<string> {
+  const client = createClient();
+  let lastError: Error | null = null;
 
-      return (response.choices[0]?.message?.content || "").trim();
-    } catch (error) {
-      const err = error as Error;
-      console.error(`[Attempt ${attempt}/${retries}] Hugging Face Inference call failed:`, err.message);
-      
-      const errorMessage = err.message?.toLowerCase() || "";
-      // If error indicates the model is cold starting/loading, wait 10s and retry
-      if (errorMessage.includes("loading") && attempt < retries) {
-        console.log("Hugging Face model is cold starting. Waiting 10 seconds before retrying...");
-        await new Promise((resolve) => setTimeout(resolve, 10000));
-        continue;
+  for (const { model, provider } of CHAT_MODELS) {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        let yielded = false;
+        const hfStream = client.chatCompletionStream({
+          model,
+          provider,
+          messages: messages as Parameters<
+            InferenceClient["chatCompletionStream"]
+          >[0]["messages"],
+          max_tokens: 500,
+          temperature: 0.1,
+        });
+
+        for await (const chunk of hfStream) {
+          const delta = chunk.choices[0]?.delta?.content;
+          if (delta) {
+            yielded = true;
+            yield delta;
+          }
+        }
+
+        if (yielded) return;
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        lastError = mapHfError(err);
+        console.error(
+          `[HF stream] ${model} attempt ${attempt}/${retries} failed:`,
+          err.message
+        );
+
+        const lower = err.message.toLowerCase();
+        if (lower.includes("loading") && attempt < retries) {
+          await sleep(8000);
+          continue;
+        }
+
+        if (
+          lower.includes("invalid") ||
+          lower.includes("expired") ||
+          lower.includes("unauthorized")
+        ) {
+          break;
+        }
       }
-      
-      if (attempt === retries) {
-        throw new Error("AI service is currently busy or warming up. Please try again in a few moments.");
-      }
-      
-      throw err;
     }
   }
-  throw new Error("AI service request failed.");
+
+  const full = await askAI(messages, retries);
+  yield* simulateStreamText(full);
+}
+
+/** Simulates streaming when HF stream is unavailable or for direct_reply text. */
+export async function* simulateStreamText(
+  text: string,
+  delayMs = 30
+): AsyncGenerator<string> {
+  const parts = text.split(/(\s+)/).filter((p) => p.length > 0);
+  for (const part of parts) {
+    yield part;
+    await sleep(delayMs);
+  }
 }
 
 /**
- * Parsed structure of the AI response.
+ * Non-streaming call — used for tool-calling decision pass only.
  */
+export async function askAI(
+  messages: ChatMessage[],
+  retries = 2
+): Promise<string> {
+  const client = createClient();
+  let lastError: Error | null = null;
+
+  for (const { model, provider } of CHAT_MODELS) {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const response = await client.chatCompletion({
+          model,
+          provider,
+          messages: messages as Parameters<
+            InferenceClient["chatCompletion"]
+          >[0]["messages"],
+          max_tokens: 500,
+          temperature: 0.1,
+        });
+
+        const content = response.choices[0]?.message?.content?.trim();
+        if (content) return content;
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        lastError = mapHfError(err);
+        console.error(
+          `[HF] ${model} attempt ${attempt}/${retries} failed:`,
+          err.message
+        );
+
+        const lower = err.message.toLowerCase();
+        if (lower.includes("loading") && attempt < retries) {
+          await sleep(8000);
+          continue;
+        }
+
+        if (
+          lower.includes("invalid") ||
+          lower.includes("expired") ||
+          lower.includes("unauthorized")
+        ) {
+          break;
+        }
+      }
+    }
+  }
+
+  throw (
+    lastError ??
+    new Error("AI service is currently unavailable. Please try again later.")
+  );
+}
+
 export interface AIResponsePayload {
   action: "tool_call" | "direct_reply";
   tool?: string;
@@ -59,25 +187,18 @@ export interface AIResponsePayload {
   message?: string;
 }
 
-/**
- * Resiliently extracts and parses the JSON action-response envelope returned by the AI.
- * 
- * @param text The raw output text returned by the model.
- */
 export function parseAIResponse(text: string): AIResponsePayload {
   const trimmed = text.trim();
 
-  // 1. Try to parse the entire text block directly as JSON
   try {
     const parsed = JSON.parse(trimmed);
     if (parsed && typeof parsed === "object" && "action" in parsed) {
       return parsed as AIResponsePayload;
     }
   } catch {
-    // Proceed to extraction regex
+    // continue
   }
 
-  // 2. Use regex to search for standard JSON objects in the response (handles markdown wrappers or intro text)
   try {
     const jsonRegex = /\{[\s\S]*?"action"[\s\S]*?\}/g;
     const matches = trimmed.match(jsonRegex);
@@ -89,28 +210,28 @@ export function parseAIResponse(text: string): AIResponsePayload {
             return parsed as AIResponsePayload;
           }
         } catch {
-          // Keep searching other matches
+          // continue
         }
       }
     }
   } catch {
-    // Ignore regex faults
+    // ignore
   }
 
-  // 3. Fall back to returning the raw response as a direct reply
   return {
     action: "direct_reply",
     message: text,
   };
 }
 
-/**
- * Formats a database execution result so the AI can parse and respond in plain text.
- * 
- * @param toolName The name of the executed database tool.
- * @param result The JSON results returned from the database execution layer.
- */
 export function formatToolResult(toolName: string, result: unknown): string {
-  return `Tool result for ${toolName}: ${JSON.stringify(result)}
-Now provide a friendly response to the user based only on this data.`;
+  const hints: Record<string, string> = {
+    get_fee_report:
+      "Note: totalFees is the COUNT of fee records; collectedAmount and pendingAmount are in USD.",
+    get_student_by_name:
+      "If one student object is returned, summarize class, gradeAvg, attendance rate, recent grades, and fee status. If multipleMatches, list names and classes only.",
+  };
+  const hint = hints[toolName] ? `\n${hints[toolName]}` : "";
+  return `Tool result for ${toolName}: ${JSON.stringify(result)}${hint}
+Write a polished executive summary for the user (no JSON, no technical labels).`;
 }

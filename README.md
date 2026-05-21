@@ -1,40 +1,86 @@
-<<<<<<< HEAD
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EduNexus — AI School Management System
 
-## Getting Started
+Full-stack school management platform with role-based dashboards and a **secured AI assistant** that queries live PostgreSQL data via tool calling.
 
-First, run the development server:
+## Stack
+
+| Layer | Tech |
+|--------|------|
+| Frontend | Next.js 14, React, Tailwind |
+| Backend | NestJS, Prisma |
+| Database | PostgreSQL |
+| AI | Hugging Face (Qwen2.5-7B-Instruct) |
+
+## Features
+
+- **Roles:** Admin, Teacher, Student, Parent
+- **Modules:** Students, Teachers, Classes, Attendance, Grades, Fees, Notices
+- **AI Assistant:** Admin & Teacher only — natural language → database tools → grounded answers
+
+## Quick Start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Backend
+cd backend
+npm install
+npx prisma db push
+npx prisma db seed
+npx ts-node update-demo.ts   # links demo accounts to seed data
+npm run start:dev            # http://localhost:4000
+
+# Frontend
+cd frontend
+npm install
+# Copy .env.example → .env.local and set NEXT_PUBLIC_API_URL, JWT_SECRET, HUGGINGFACE_API_KEY
+npm run dev                  # http://localhost:3000
+
+# Verify Hugging Face token (after setting .env.local):
+node scripts/validate-hf-token.mjs
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Hugging Face API key (required for AI chat)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Open [Hugging Face tokens](https://huggingface.co/settings/tokens) and create a **new** token.
+2. **Fine-grained token:** enable **“Make calls to Inference Providers”** (or use a classic token with **Read**).
+3. In `frontend/.env.local` set **without quotes**:
+   `HUGGINGFACE_API_KEY=hf_your_new_token`
+4. Remove duplicate `HUGGINGFACE_API_KEY` from `frontend/.env` if you use `.env.local`.
+5. **Restart** `npm run dev` (env is only read at startup).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+If the UI shows *“Invalid username or password”*, admin login is fine — the **HF token** is expired or revoked. Run `node scripts/validate-hf-token.mjs` until it prints `SUCCESS`.
 
-## Learn More
+### Demo logins
 
-To learn more about Next.js, take a look at the following resources:
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@edunexus.com | admin123 |
+| Teacher | teacher@edunexus.com | teacher123 |
+| Student | student@edunexus.com | student123 |
+| Parent | parent@edunexus.com | parent123 |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Documentation
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **[PROJECT-MASTER-GUIDE.md](docs/PROJECT-MASTER-GUIDE.md)** — full project reference (read this to remember everything)
+- [AI-ARCHITECTURE.md](docs/AI-ARCHITECTURE.md) — AI flow, security, tool matrix
 
-## Deploy on Vercel
+## AI Assistant
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Try asking:**
+- "How many students are absent today?"
+- "What is the fee collection rate?" (admin)
+- "List all recent notices"
+- "Show me top 5 students in Class 10"
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-=======
-# ai-school-assistant
->>>>>>> 857d39308aa4153806e7eb2905066e7b2e696190
+## Tests
+
+```bash
+cd frontend
+node test-chat-auth.mjs   # verifies /api/chat returns 401 without token
+```
+
+## Portfolio highlights
+
+- JWT-secured AI pipeline with role-based tool permissions
+- Simulated function calling with structured JSON (no hallucinated student data)
+- Stale-while-revalidate caching on dashboards
+- Monorepo: NestJS API + Next.js App Router

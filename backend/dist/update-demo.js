@@ -16,6 +16,17 @@ async function main() {
         where: { email: 'student@edunexus.com' },
         data: { name: 'Muhammad Hamza' }
     });
+    const demoTeacherRecord = await prisma.teacher.findFirst({
+        where: { classId: { not: null } },
+        orderBy: { id: 'asc' },
+    });
+    if (demoTeacherRecord) {
+        await prisma.teacher.update({
+            where: { id: demoTeacherRecord.id },
+            data: { email: 'teacher@edunexus.com' },
+        });
+        console.log(`Linked teacher@edunexus.com to ${demoTeacherRecord.name} (${demoTeacherRecord.subject})`);
+    }
     const students = await prisma.student.findMany({ where: { name: 'Muhammad Hamza' } });
     if (students.length > 0) {
         await prisma.student.update({

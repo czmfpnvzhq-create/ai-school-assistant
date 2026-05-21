@@ -1,8 +1,9 @@
 import { PrismaService } from '../prisma/prisma.service';
 export declare class DashboardService {
     private prisma;
+    private adminStatsCache;
     constructor(prisma: PrismaService);
-    getAdminStats(): Promise<{
+    getAdminStats(): Promise<Record<string, unknown> | {
         totalStudents: number;
         totalTeachers: number;
         totalClasses: number;
@@ -21,7 +22,6 @@ export declare class DashboardService {
             createdAt: Date;
             title: string;
             content: string;
-            postedBy: string;
         }[];
         attendanceData: {
             name: string;
@@ -90,7 +90,12 @@ export declare class DashboardService {
                 totalDays: number;
                 presentDays: number;
                 absentDays: number;
+                lateDays: number;
                 percentage: number;
+                records: {
+                    date: string;
+                    status: import("@prisma/client").$Enums.AttendanceStatus;
+                }[];
             };
             recentGrades: {
                 id: number;
@@ -126,13 +131,31 @@ export declare class DashboardService {
                 totalDays: number;
                 presentDays: number;
                 absentDays: number;
+                lateDays: number;
                 percentage: number;
+                records: {
+                    date: string;
+                    status: import("@prisma/client").$Enums.AttendanceStatus;
+                }[];
             };
             recentGrades: {
                 id: number;
                 subject: string;
                 score: number;
                 examDate: Date;
+            }[];
+            grades: {
+                id: number;
+                subject: string;
+                score: number;
+                examDate: Date;
+            }[];
+            fees: {
+                id: number;
+                amount: number;
+                paid: boolean;
+                dueDate: Date;
+                paidAt: Date | null;
             }[];
             latestFee: {
                 id: number;
@@ -141,6 +164,11 @@ export declare class DashboardService {
                 dueDate: Date;
                 paidAt: Date | null;
             } | null;
+            feeSummary: {
+                total: number;
+                paid: number;
+                pending: number;
+            };
         };
         recentNotices: {
             id: number;

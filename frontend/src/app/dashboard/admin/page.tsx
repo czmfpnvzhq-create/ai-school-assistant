@@ -1,43 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Link from "next/link";
-import { API_BASE_URL } from "@/lib/config";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer
-} from "recharts";
-
-interface AdminStats {
-  totalStudents: number;
-  totalTeachers: number;
-  totalClasses: number;
-  feesCollected: number;
-  feesPending: number;
-  absentToday: number;
-  topStudents: {
-    id: number;
-    rank: number;
-    name: string;
-    className: string;
-    gradeAvg: number;
-  }[];
-  recentNotices: {
-    id: number;
-    title: string;
-    content: string;
-    createdAt: string;
-  }[];
-  attendanceData: {
-    name: string;
-    rate: number;
-  }[];
-}
+import { AdminAttendanceChart } from "@/components/dashboard/AdminAttendanceChart";
+import { useAdminStats } from "@/lib/hooks/useAdminStats";
 
 function DashboardSkeleton() {
   return (
@@ -90,40 +56,7 @@ function DashboardSkeleton() {
 }
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState<AdminStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Check cache first (Stale-While-Revalidate pattern)
-    const cachedStats = sessionStorage.getItem("edunexus_admin_stats");
-    if (cachedStats) {
-      try {
-        setStats(JSON.parse(cachedStats));
-        setIsLoading(false);
-      } catch (e) {
-        console.error("Failed to parse cached stats", e);
-      }
-    }
-
-    async function fetchStats() {
-      try {
-        const res = await fetch(`${API_BASE_URL}/dashboard/admin-stats`);
-        if (!res.ok) throw new Error("Failed to fetch dashboard stats");
-        const data = await res.json();
-        setStats(data);
-        sessionStorage.setItem("edunexus_admin_stats", JSON.stringify(data));
-      } catch (err: unknown) {
-        // Only show error if we have no cached data to display
-        if (!cachedStats) {
-          setError(err instanceof Error ? err.message : "An unexpected error occurred");
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    fetchStats();
-  }, []);
+  const { stats, isLoading, error } = useAdminStats();
 
   if (isLoading && !stats) {
     return <DashboardSkeleton />;
@@ -160,27 +93,7 @@ export default function AdminDashboard() {
             <h3 className="text-lg font-bold text-slate-200 mb-6 flex items-center gap-2">
               <span>📈</span> 7-Day Attendance Trend
             </h3>
-            <div className="h-72 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={stats.attendanceData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} tickFormatter={(val) => `${val}%`} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#f1f5f9' }}
-                    itemStyle={{ color: '#60a5fa', fontWeight: 'bold' }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="rate" 
-                    stroke="#60a5fa" 
-                    strokeWidth={3}
-                    dot={{ r: 4, fill: '#0f172a', stroke: '#60a5fa', strokeWidth: 2 }}
-                    activeDot={{ r: 6, fill: '#60a5fa', stroke: '#0f172a', strokeWidth: 2 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            <AdminAttendanceChart data={stats.attendanceData} />
           </div>
 
           {/* 3. Top 5 Students Table */}
@@ -241,7 +154,7 @@ export default function AdminDashboard() {
                 <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">✅</div>
                 <div className="font-bold text-slate-200 group-hover:text-green-400 transition-colors">Mark Attendance</div>
               </Link>
-              <Link href="/dashboard/chat" className="flex items-center gap-4 bg-slate-950/50 hover:bg-purple-600/20 p-4 rounded-xl border border-white/5 hover:border-purple-500/30 transition-all group">
+              <Link href="/dashboard/admin/ai-assistant" className="flex items-center gap-4 bg-slate-950/50 hover:bg-purple-600/20 p-4 rounded-xl border border-white/5 hover:border-purple-500/30 transition-all group">
                 <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">🤖</div>
                 <div className="font-bold text-slate-200 group-hover:text-purple-400 transition-colors">AI Assistant</div>
               </Link>

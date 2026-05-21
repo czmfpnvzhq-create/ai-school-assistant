@@ -10,11 +10,13 @@ exports.ToolsModule = void 0;
 const common_1 = require("@nestjs/common");
 const tools_service_1 = require("./tools.service");
 const tools_controller_1 = require("./tools.controller");
+const auth_module_1 = require("../auth/auth.module");
 let ToolsModule = class ToolsModule {
 };
 exports.ToolsModule = ToolsModule;
 exports.ToolsModule = ToolsModule = __decorate([
     (0, common_1.Module)({
+        imports: [auth_module_1.AuthModule],
         providers: [tools_service_1.ToolsService],
         controllers: [tools_controller_1.ToolsController],
     })

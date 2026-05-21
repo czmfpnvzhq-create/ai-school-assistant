@@ -45,11 +45,11 @@ model Notice {
 }
 
 model Fee {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   studentId Int
-  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
   amount    Float
-  paid      Boolean  @default(false)
+  paid      Boolean   @default(false)
   dueDate   DateTime
   paidAt    DateTime?
 

@@ -3,84 +3,117 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class DashboardService {
+  private adminStatsCache: { data: Record<string, unknown>; expires: number } | null = null;
+
   constructor(private prisma: PrismaService) {}
 
   async getAdminStats() {
     try {
+      if (this.adminStatsCache && this.adminStatsCache.expires > Date.now()) {
+        return this.adminStatsCache.data;
+      }
+
       const startOfToday = new Date();
       startOfToday.setHours(0, 0, 0, 0);
       const endOfToday = new Date();
       endOfToday.setHours(23, 59, 59, 999);
 
-      // Fetch concurrently for better performance
+      const startOfWeek = new Date();
+      startOfWeek.setDate(startOfWeek.getDate() - 6);
+      startOfWeek.setHours(0, 0, 0, 0);
+
       const [
         totalStudents,
         totalTeachers,
         totalClasses,
-        fees,
+        feesCollectedAgg,
+        feesPending,
         absentToday,
         topStudentsData,
-        recentNotices
+        recentNotices,
+        weekAttendance,
       ] = await Promise.all([
         this.prisma.student.count(),
         this.prisma.teacher.count(),
         this.prisma.class.count(),
-        this.prisma.fee.findMany(),
+        this.prisma.fee.aggregate({
+          where: { paid: true },
+          _sum: { amount: true },
+        }),
+        this.prisma.fee.count({ where: { paid: false } }),
         this.prisma.attendance.count({
           where: {
             date: { gte: startOfToday, lte: endOfToday },
-            status: 'absent'
-          }
+            status: 'absent',
+          },
         }),
         this.prisma.student.findMany({
           orderBy: { gradeAvg: 'desc' },
           take: 5,
-          include: { class: true }
+          select: {
+            id: true,
+            name: true,
+            gradeAvg: true,
+            class: { select: { name: true } },
+          },
         }),
         this.prisma.notice.findMany({
           orderBy: { createdAt: 'desc' },
-          take: 3
-        })
+          take: 3,
+          select: {
+            id: true,
+            title: true,
+            content: true,
+            createdAt: true,
+          },
+        }),
+        this.prisma.attendance.findMany({
+          where: { date: { gte: startOfWeek, lte: endOfToday } },
+          select: { date: true, status: true },
+        }),
       ]);
 
-      // Calculate Fees
-      const feesCollected = fees.filter(f => f.paid).reduce((sum, f) => sum + f.amount, 0);
-      const feesPending = fees.filter(f => !f.paid).length;
+      const feesCollected = feesCollectedAgg._sum.amount ?? 0;
 
       const topStudents = topStudentsData.map((s, index) => ({
         id: s.id,
         rank: index + 1,
         name: s.name,
         className: s.class?.name || 'No Class',
-        gradeAvg: s.gradeAvg
+        gradeAvg: s.gradeAvg,
       }));
 
-      // Attendance chart data for the last 7 days
+      const dayBuckets = new Map<string, { total: number; present: number }>();
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().slice(0, 10);
+        dayBuckets.set(key, { total: 0, present: 0 });
+      }
+
+      for (const record of weekAttendance) {
+        const key = record.date.toISOString().slice(0, 10);
+        const bucket = dayBuckets.get(key);
+        if (!bucket) continue;
+        bucket.total += 1;
+        if (record.status === 'present') bucket.present += 1;
+      }
+
       const attendanceData: Array<{ name: string; rate: number }> = [];
       for (let i = 6; i >= 0; i--) {
         const d = new Date();
         d.setDate(d.getDate() - i);
-        const start = new Date(d);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(d);
-        end.setHours(23, 59, 59, 999);
-
-        const dayRecords = await this.prisma.attendance.findMany({
-          where: { date: { gte: start, lte: end } }
-        });
-
-        const total = dayRecords.length;
-        const present = dayRecords.filter(r => r.status === 'present').length;
-        
-        const percentage = total === 0 ? 100 : Math.round((present / total) * 100);
-
+        const key = d.toISOString().slice(0, 10);
+        const bucket = dayBuckets.get(key) ?? { total: 0, present: 0 };
+        const percentage =
+          bucket.total === 0 ? 100 : Math.round((bucket.present / bucket.total) * 100);
         attendanceData.push({
           name: d.toLocaleDateString('en-US', { weekday: 'short' }),
-          rate: percentage
+          rate: percentage,
         });
       }
 
-      return {
+      const result = {
         totalStudents,
         totalTeachers,
         totalClasses,
@@ -89,8 +122,15 @@ export class DashboardService {
         absentToday,
         topStudents,
         recentNotices,
-        attendanceData
+        attendanceData,
       };
+
+      this.adminStatsCache = {
+        data: result,
+        expires: Date.now() + 60_000,
+      };
+
+      return result;
     } catch (error) {
       console.error("Failed to fetch admin stats in NestJS", error);
       throw new InternalServerErrorException("Failed to fetch stats");

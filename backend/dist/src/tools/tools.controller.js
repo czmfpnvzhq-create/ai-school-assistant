@@ -15,25 +15,33 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ToolsController = void 0;
 const common_1 = require("@nestjs/common");
 const tools_service_1 = require("./tools.service");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const tool_permissions_1 = require("./tool-permissions");
 let ToolsController = class ToolsController {
     toolsService;
     constructor(toolsService) {
         this.toolsService = toolsService;
     }
-    async executeTool(body) {
-        return this.toolsService.executeTool(body.toolName, body.toolArgs);
+    async executeTool(body, req) {
+        const { toolName, toolArgs } = body;
+        if (!(0, tool_permissions_1.isToolAllowedForRole)(req.user.role, toolName)) {
+            throw new common_1.ForbiddenException(`Role ${req.user.role} is not allowed to use tool: ${toolName}`);
+        }
+        return this.toolsService.executeTool(toolName, toolArgs ?? {});
     }
 };
 exports.ToolsController = ToolsController;
 __decorate([
     (0, common_1.Post)('execute'),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], ToolsController.prototype, "executeTool", null);
 exports.ToolsController = ToolsController = __decorate([
     (0, common_1.Controller)('tools'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [tools_service_1.ToolsService])
 ], ToolsController);
 //# sourceMappingURL=tools.controller.js.map

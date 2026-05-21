@@ -2,7 +2,7 @@ import { DashboardService } from './dashboard.service';
 export declare class DashboardController {
     private dashboardService;
     constructor(dashboardService: DashboardService);
-    getAdminStats(): Promise<{
+    getAdminStats(): Promise<Record<string, unknown> | {
         totalStudents: number;
         totalTeachers: number;
         totalClasses: number;
@@ -21,7 +21,6 @@ export declare class DashboardController {
             createdAt: Date;
             title: string;
             content: string;
-            postedBy: string;
         }[];
         attendanceData: {
             name: string;
@@ -90,7 +89,12 @@ export declare class DashboardController {
                 totalDays: number;
                 presentDays: number;
                 absentDays: number;
+                lateDays: number;
                 percentage: number;
+                records: {
+                    date: string;
+                    status: import("@prisma/client").$Enums.AttendanceStatus;
+                }[];
             };
             recentGrades: {
                 id: number;
@@ -126,13 +130,31 @@ export declare class DashboardController {
                 totalDays: number;
                 presentDays: number;
                 absentDays: number;
+                lateDays: number;
                 percentage: number;
+                records: {
+                    date: string;
+                    status: import("@prisma/client").$Enums.AttendanceStatus;
+                }[];
             };
             recentGrades: {
                 id: number;
                 subject: string;
                 score: number;
                 examDate: Date;
+            }[];
+            grades: {
+                id: number;
+                subject: string;
+                score: number;
+                examDate: Date;
+            }[];
+            fees: {
+                id: number;
+                amount: number;
+                paid: boolean;
+                dueDate: Date;
+                paidAt: Date | null;
             }[];
             latestFee: {
                 id: number;
@@ -141,6 +163,11 @@ export declare class DashboardController {
                 dueDate: Date;
                 paidAt: Date | null;
             } | null;
+            feeSummary: {
+                total: number;
+                paid: number;
+                pending: number;
+            };
         };
         recentNotices: {
             id: number;

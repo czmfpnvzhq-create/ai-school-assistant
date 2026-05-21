@@ -37,6 +37,7 @@ let DashboardController = class DashboardController {
 exports.DashboardController = DashboardController;
 __decorate([
     (0, common_1.Get)('admin-stats'),
+    (0, common_1.Header)('Cache-Control', 'private, max-age=60'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
@@ -44,6 +45,7 @@ __decorate([
 __decorate([
     (0, common_1.Get)('teacher-stats'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Header)('Cache-Control', 'private, max-age=30'),
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -52,6 +54,7 @@ __decorate([
 __decorate([
     (0, common_1.Get)('student-stats'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Header)('Cache-Control', 'private, max-age=30'),
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -60,6 +63,7 @@ __decorate([
 __decorate([
     (0, common_1.Get)('parent-stats'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Header)('Cache-Control', 'private, max-age=30'),
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
