@@ -12,6 +12,10 @@ out/
 # production
 build/
 
+# build outputs
+dist/
+**/dist/
+
 # misc
 .DS_Store
 *.pem
