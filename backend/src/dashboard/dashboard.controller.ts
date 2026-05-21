@@ -16,4 +16,16 @@ export class DashboardController {
   async getTeacherStats(@Req() req: any) {
     return this.dashboardService.getTeacherStats(req.user.email);
   }
+
+  @Get('student-stats')
+  @UseGuards(JwtAuthGuard)
+  async getStudentStats(@Req() req: any) {
+    return this.dashboardService.getStudentStats(req.user.name);
+  }
+
+  @Get('parent-stats')
+  @UseGuards(JwtAuthGuard)
+  async getParentStats(@Req() req: any) {
+    return this.dashboardService.getParentStats(req.user.email);
+  }
 }

@@ -3,8 +3,8 @@ export declare class NoticesController {
     private noticesService;
     constructor(noticesService: NoticesService);
     findAll(): Promise<{
-        createdAt: Date;
         id: number;
+        createdAt: Date;
         title: string;
         content: string;
         postedBy: string;
@@ -13,15 +13,15 @@ export declare class NoticesController {
         title: string;
         content: string;
     }, req: any): Promise<{
-        createdAt: Date;
         id: number;
+        createdAt: Date;
         title: string;
         content: string;
         postedBy: string;
     }>;
     delete(id: number, req: any): Promise<{
-        createdAt: Date;
         id: number;
+        createdAt: Date;
         title: string;
         content: string;
         postedBy: string;

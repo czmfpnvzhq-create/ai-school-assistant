@@ -216,4 +216,165 @@ export class DashboardService {
       throw new InternalServerErrorException("Failed to fetch teacher stats");
     }
   }
+
+  async getStudentStats(userName: string) {
+    try {
+      // Find the first student matching the userName
+      const student = await this.prisma.student.findFirst({
+        where: { name: userName },
+        include: {
+          class: true,
+          attendances: {
+            orderBy: { date: 'desc' },
+            take: 30, // Get last 30 days of attendance
+          },
+          grades: {
+            orderBy: { examDate: 'desc' },
+            take: 10,
+          },
+        },
+      });
+
+      // Get latest notices
+      const recentNotices = await this.prisma.notice.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      });
+
+      if (!student) {
+        return { student: null, recentNotices };
+      }
+
+      // Calculate attendance stats
+      const totalDays = student.attendances.length;
+      const presentDays = student.attendances.filter(a => a.status === 'present' || a.status === 'late').length;
+      const absentDays = student.attendances.filter(a => a.status === 'absent').length;
+      const lateDays = student.attendances.filter(a => a.status === 'late').length;
+      const attendancePercentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
+
+      return {
+        student: {
+          id: student.id,
+          name: student.name,
+          className: student.class?.name || 'Unassigned',
+          gradeAvg: student.gradeAvg,
+          attendance: {
+            totalDays,
+            presentDays,
+            absentDays,
+            lateDays,
+            percentage: attendancePercentage,
+            records: student.attendances.map(a => ({
+              date: a.date.toISOString(),
+              status: a.status,
+            })),
+          },
+          recentGrades: student.grades.map(g => ({
+            id: g.id,
+            subject: g.subject,
+            score: g.score,
+            examDate: g.examDate,
+          })),
+        },
+        recentNotices,
+      };
+    } catch (error) {
+      console.error("Failed to fetch student stats", error);
+      throw new InternalServerErrorException("Failed to fetch student stats");
+    }
+  }
+
+  async getParentStats(parentEmail: string) {
+    try {
+      // Find the child associated with the parent's email.
+      const student = await this.prisma.student.findFirst({
+        where: { parentEmail: parentEmail },
+        include: {
+          class: true,
+          attendances: {
+            orderBy: { date: 'desc' },
+            take: 30,
+          },
+          grades: {
+            orderBy: { examDate: 'desc' },
+            take: 10,
+          },
+          fees: {
+            orderBy: { dueDate: 'desc' },
+          },
+        },
+      });
+
+      // Get latest notices
+      const recentNotices = await this.prisma.notice.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      });
+
+      if (!student) {
+        return { child: null, recentNotices };
+      }
+
+      // Calculate attendance stats
+      const totalDays = student.attendances.length;
+      const presentDays = student.attendances.filter(a => a.status === 'present').length;
+      const lateDays = student.attendances.filter(a => a.status === 'late').length;
+      const absentDays = student.attendances.filter(a => a.status === 'absent').length;
+      const attendancePercentage = totalDays > 0 ? Math.round(((presentDays + lateDays) / totalDays) * 100) : 0;
+
+      const mapGrade = (g: { id: number; subject: string; score: number; examDate: Date }) => ({
+        id: g.id,
+        subject: g.subject,
+        score: g.score,
+        examDate: g.examDate,
+      });
+
+      const mapFee = (f: { id: number; amount: number; paid: boolean; dueDate: Date; paidAt: Date | null }) => ({
+        id: f.id,
+        amount: f.amount,
+        paid: f.paid,
+        dueDate: f.dueDate,
+        paidAt: f.paidAt,
+      });
+
+      const fees = student.fees.map(mapFee);
+      const latestFee = fees.length > 0 ? fees[0] : null;
+      const feeSummary = {
+        total: fees.reduce((sum, f) => sum + f.amount, 0),
+        paid: fees.filter(f => f.paid).reduce((sum, f) => sum + f.amount, 0),
+        pending: fees.filter(f => !f.paid).reduce((sum, f) => sum + f.amount, 0),
+      };
+
+      const grades = student.grades.map(mapGrade);
+
+      return {
+        child: {
+          id: student.id,
+          name: student.name,
+          className: student.class?.name || 'Unassigned',
+          gradeAvg: student.gradeAvg,
+          attendance: {
+            totalDays,
+            presentDays,
+            absentDays,
+            lateDays,
+            percentage: attendancePercentage,
+            records: student.attendances.map(a => ({
+              date: a.date.toISOString(),
+              status: a.status,
+            })),
+          },
+          recentGrades: grades.slice(0, 5),
+          grades,
+          fees,
+          latestFee,
+          feeSummary,
+        },
+        recentNotices,
+      };
+    } catch (error) {
+      console.error("Failed to fetch parent stats", error);
+      throw new InternalServerErrorException("Failed to fetch parent stats");
+    }
+  }
 }

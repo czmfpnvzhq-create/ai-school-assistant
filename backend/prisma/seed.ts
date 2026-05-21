@@ -213,6 +213,19 @@ async function main() {
     console.log(`👤 Seeded 10 students, profiles, fees, attendance, and grades for ${classInfo.name}.`);
   }
 
+  // Link demo parent account to the first student (Class 6) for testing
+  const demoChild = await prisma.student.findFirst({
+    where: { class: { name: "Class 6" } },
+    orderBy: { id: "asc" },
+  });
+  if (demoChild) {
+    await prisma.student.update({
+      where: { id: demoChild.id },
+      data: { parentEmail: "parent@edunexus.com" },
+    });
+    console.log(`🔗 Linked parent@edunexus.com to student: ${demoChild.name}`);
+  }
+
   console.log("🎉 Database seeding completed successfully!");
 }
 
