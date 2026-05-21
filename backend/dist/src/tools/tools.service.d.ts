@@ -4,8 +4,8 @@ export declare class ToolsService {
     constructor(prisma: PrismaService);
     private getClassOrError;
     executeTool(toolName: string, toolArgs: any): Promise<{
-        name: string;
         id: number;
+        name: string;
         gradeAvg: number;
     }[] | {
         studentName: string;

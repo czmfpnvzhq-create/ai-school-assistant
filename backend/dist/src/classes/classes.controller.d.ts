@@ -10,8 +10,8 @@ export declare class ClassesController {
         studentCount: number;
         teacherCount: number;
         assignedTeachers: {
-            name: string;
             id: number;
+            name: string;
             subject: string;
         }[];
     }[]>;
@@ -19,19 +19,19 @@ export declare class ClassesController {
         name: string;
         teacher: string;
     }): Promise<{
-        name: string;
-        teacher: string;
-        createdAt: Date;
         id: number;
+        name: string;
+        createdAt: Date;
+        teacher: string;
     }>;
     update(id: number, body: {
         name: string;
         teacher: string;
     }): Promise<{
-        name: string;
-        teacher: string;
-        createdAt: Date;
         id: number;
+        name: string;
+        createdAt: Date;
+        teacher: string;
     }>;
     delete(id: number): Promise<{
         success: boolean;

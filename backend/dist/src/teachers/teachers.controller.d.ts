@@ -4,48 +4,48 @@ export declare class TeachersController {
     constructor(teachersService: TeachersService);
     findAll(): Promise<({
         class: {
-            name: string;
-            teacher: string;
-            createdAt: Date;
             id: number;
+            name: string;
+            createdAt: Date;
+            teacher: string;
         } | null;
     } & {
-        name: string;
-        createdAt: Date;
         id: number;
         email: string;
-        subject: string;
+        name: string;
+        createdAt: Date;
         classId: number | null;
+        subject: string;
     })[]>;
     create(body: any): Promise<{
         class: {
-            name: string;
-            teacher: string;
-            createdAt: Date;
             id: number;
+            name: string;
+            createdAt: Date;
+            teacher: string;
         } | null;
     } & {
-        name: string;
-        createdAt: Date;
         id: number;
         email: string;
-        subject: string;
+        name: string;
+        createdAt: Date;
         classId: number | null;
+        subject: string;
     }>;
     update(id: number, body: any): Promise<{
         class: {
-            name: string;
-            teacher: string;
-            createdAt: Date;
             id: number;
+            name: string;
+            createdAt: Date;
+            teacher: string;
         } | null;
     } & {
-        name: string;
-        createdAt: Date;
         id: number;
         email: string;
-        subject: string;
+        name: string;
+        createdAt: Date;
         classId: number | null;
+        subject: string;
     }>;
     delete(id: number): Promise<{
         success: boolean;

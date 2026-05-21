@@ -17,8 +17,8 @@ export declare class DashboardController {
             gradeAvg: number;
         }[];
         recentNotices: {
-            createdAt: Date;
             id: number;
+            createdAt: Date;
             title: string;
             content: string;
             postedBy: string;
@@ -58,8 +58,8 @@ export declare class DashboardController {
         classGradeAvg: number;
         students: {
             todayStatus: string | null;
-            name: string;
             id: number;
+            name: string;
             gradeAvg: number;
         }[];
         recentGrades: {
@@ -70,5 +70,84 @@ export declare class DashboardController {
             examDate: Date;
         }[];
         todayAttendance?: undefined;
+    }>;
+    getStudentStats(req: any): Promise<{
+        student: null;
+        recentNotices: {
+            id: number;
+            createdAt: Date;
+            title: string;
+            content: string;
+            postedBy: string;
+        }[];
+    } | {
+        student: {
+            id: number;
+            name: string;
+            className: string;
+            gradeAvg: number;
+            attendance: {
+                totalDays: number;
+                presentDays: number;
+                absentDays: number;
+                percentage: number;
+            };
+            recentGrades: {
+                id: number;
+                subject: string;
+                score: number;
+                examDate: Date;
+            }[];
+        };
+        recentNotices: {
+            id: number;
+            createdAt: Date;
+            title: string;
+            content: string;
+            postedBy: string;
+        }[];
+    }>;
+    getParentStats(req: any): Promise<{
+        child: null;
+        recentNotices: {
+            id: number;
+            createdAt: Date;
+            title: string;
+            content: string;
+            postedBy: string;
+        }[];
+    } | {
+        child: {
+            id: number;
+            name: string;
+            className: string;
+            gradeAvg: number;
+            attendance: {
+                totalDays: number;
+                presentDays: number;
+                absentDays: number;
+                percentage: number;
+            };
+            recentGrades: {
+                id: number;
+                subject: string;
+                score: number;
+                examDate: Date;
+            }[];
+            latestFee: {
+                id: number;
+                amount: number;
+                paid: boolean;
+                dueDate: Date;
+                paidAt: Date | null;
+            } | null;
+        };
+        recentNotices: {
+            id: number;
+            createdAt: Date;
+            title: string;
+            content: string;
+            postedBy: string;
+        }[];
     }>;
 }

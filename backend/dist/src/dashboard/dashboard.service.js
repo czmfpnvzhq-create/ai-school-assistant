@@ -177,6 +177,126 @@ let DashboardService = class DashboardService {
             throw new common_1.InternalServerErrorException("Failed to fetch teacher stats");
         }
     }
+    async getStudentStats(userName) {
+        try {
+            const student = await this.prisma.student.findFirst({
+                where: { name: userName },
+                include: {
+                    class: true,
+                    attendances: {
+                        orderBy: { date: 'desc' },
+                        take: 30,
+                    },
+                    grades: {
+                        orderBy: { examDate: 'desc' },
+                        take: 10,
+                    },
+                },
+            });
+            const recentNotices = await this.prisma.notice.findMany({
+                orderBy: { createdAt: 'desc' },
+                take: 5,
+            });
+            if (!student) {
+                return { student: null, recentNotices };
+            }
+            const totalDays = student.attendances.length;
+            const presentDays = student.attendances.filter(a => a.status === 'present' || a.status === 'late').length;
+            const absentDays = student.attendances.filter(a => a.status === 'absent').length;
+            const attendancePercentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
+            return {
+                student: {
+                    id: student.id,
+                    name: student.name,
+                    className: student.class?.name || 'Unassigned',
+                    gradeAvg: student.gradeAvg,
+                    attendance: {
+                        totalDays,
+                        presentDays,
+                        absentDays,
+                        percentage: attendancePercentage,
+                    },
+                    recentGrades: student.grades.map(g => ({
+                        id: g.id,
+                        subject: g.subject,
+                        score: g.score,
+                        examDate: g.examDate,
+                    })),
+                },
+                recentNotices,
+            };
+        }
+        catch (error) {
+            console.error("Failed to fetch student stats", error);
+            throw new common_1.InternalServerErrorException("Failed to fetch student stats");
+        }
+    }
+    async getParentStats(parentEmail) {
+        try {
+            const student = await this.prisma.student.findFirst({
+                where: { parentEmail: parentEmail },
+                include: {
+                    class: true,
+                    attendances: {
+                        orderBy: { date: 'desc' },
+                        take: 30,
+                    },
+                    grades: {
+                        orderBy: { examDate: 'desc' },
+                        take: 10,
+                    },
+                    fees: {
+                        orderBy: { dueDate: 'desc' },
+                        take: 1,
+                    },
+                },
+            });
+            const recentNotices = await this.prisma.notice.findMany({
+                orderBy: { createdAt: 'desc' },
+                take: 5,
+            });
+            if (!student) {
+                return { child: null, recentNotices };
+            }
+            const totalDays = student.attendances.length;
+            const presentDays = student.attendances.filter(a => a.status === 'present' || a.status === 'late').length;
+            const absentDays = student.attendances.filter(a => a.status === 'absent').length;
+            const attendancePercentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
+            const latestFee = student.fees.length > 0 ? student.fees[0] : null;
+            return {
+                child: {
+                    id: student.id,
+                    name: student.name,
+                    className: student.class?.name || 'Unassigned',
+                    gradeAvg: student.gradeAvg,
+                    attendance: {
+                        totalDays,
+                        presentDays,
+                        absentDays,
+                        percentage: attendancePercentage,
+                    },
+                    recentGrades: student.grades.map(g => ({
+                        id: g.id,
+                        subject: g.subject,
+                        score: g.score,
+                        examDate: g.examDate,
+                    })),
+                    latestFee: latestFee ? {
+                        id: latestFee.id,
+                        amount: latestFee.amount,
+                        paid: latestFee.paid,
+                        dueDate: latestFee.dueDate,
+                        paidAt: latestFee.paidAt,
+                    } : null,
+                },
+                recentNotices,
+            };
+        }
+        catch (error) {
+            console.error("Failed to fetch parent stats", error);
+            throw new common_1.InternalServerErrorException("Failed to fetch parent stats");
+        }
+    }
 };
 exports.DashboardService = DashboardService;
 exports.DashboardService = DashboardService = __decorate([

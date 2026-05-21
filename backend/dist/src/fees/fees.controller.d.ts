@@ -6,15 +6,15 @@ export declare class FeesController {
         fees: ({
             student: {
                 class: {
-                    name: string;
-                    teacher: string;
-                    createdAt: Date;
                     id: number;
+                    name: string;
+                    createdAt: Date;
+                    teacher: string;
                 };
             } & {
+                id: number;
                 name: string;
                 createdAt: Date;
-                id: number;
                 classId: number;
                 gradeAvg: number;
                 parentEmail: string | null;
@@ -39,15 +39,15 @@ export declare class FeesController {
     pay(id: number): Promise<{
         student: {
             class: {
-                name: string;
-                teacher: string;
-                createdAt: Date;
                 id: number;
+                name: string;
+                createdAt: Date;
+                teacher: string;
             };
         } & {
+            id: number;
             name: string;
             createdAt: Date;
-            id: number;
             classId: number;
             gradeAvg: number;
             parentEmail: string | null;

@@ -3,23 +3,23 @@ export declare class StudentsService {
     private prisma;
     constructor(prisma: PrismaService);
     getClasses(): Promise<{
-        name: string;
-        teacher: string;
-        createdAt: Date;
         id: number;
+        name: string;
+        createdAt: Date;
+        teacher: string;
     }[]>;
     findAll(search?: string, className?: string, page?: number, limit?: number): Promise<{
         students: ({
             class: {
-                name: string;
-                teacher: string;
-                createdAt: Date;
                 id: number;
+                name: string;
+                createdAt: Date;
+                teacher: string;
             };
         } & {
+            id: number;
             name: string;
             createdAt: Date;
-            id: number;
             classId: number;
             gradeAvg: number;
             parentEmail: string | null;
@@ -34,10 +34,10 @@ export declare class StudentsService {
         id: number;
         name: string;
         class: {
-            name: string;
-            teacher: string;
-            createdAt: Date;
             id: number;
+            name: string;
+            createdAt: Date;
+            teacher: string;
         };
         gradeAvg: number;
         parentEmail: string | null;
@@ -66,15 +66,15 @@ export declare class StudentsService {
     }>;
     create(body: any): Promise<{
         class: {
-            name: string;
-            teacher: string;
-            createdAt: Date;
             id: number;
+            name: string;
+            createdAt: Date;
+            teacher: string;
         };
     } & {
+        id: number;
         name: string;
         createdAt: Date;
-        id: number;
         classId: number;
         gradeAvg: number;
         parentEmail: string | null;
@@ -83,15 +83,15 @@ export declare class StudentsService {
     }>;
     update(id: number, body: any): Promise<{
         class: {
-            name: string;
-            teacher: string;
-            createdAt: Date;
             id: number;
+            name: string;
+            createdAt: Date;
+            teacher: string;
         };
     } & {
+        id: number;
         name: string;
         createdAt: Date;
-        id: number;
         classId: number;
         gradeAvg: number;
         parentEmail: string | null;

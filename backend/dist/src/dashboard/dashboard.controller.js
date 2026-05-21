@@ -27,6 +27,12 @@ let DashboardController = class DashboardController {
     async getTeacherStats(req) {
         return this.dashboardService.getTeacherStats(req.user.email);
     }
+    async getStudentStats(req) {
+        return this.dashboardService.getStudentStats(req.user.name);
+    }
+    async getParentStats(req) {
+        return this.dashboardService.getParentStats(req.user.email);
+    }
 };
 exports.DashboardController = DashboardController;
 __decorate([
@@ -43,6 +49,22 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], DashboardController.prototype, "getTeacherStats", null);
+__decorate([
+    (0, common_1.Get)('student-stats'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], DashboardController.prototype, "getStudentStats", null);
+__decorate([
+    (0, common_1.Get)('parent-stats'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], DashboardController.prototype, "getParentStats", null);
 exports.DashboardController = DashboardController = __decorate([
     (0, common_1.Controller)('dashboard'),
     __metadata("design:paramtypes", [dashboard_service_1.DashboardService])
