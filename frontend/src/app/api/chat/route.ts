@@ -1,33 +1,21 @@
 import { NextResponse } from "next/server";
 import { getSystemPrompt, type AiUserContext } from "@/lib/prompts/system";
+import { simulateStreamText } from "@/lib/ai/huggingface";
 import {
-  askAI,
-  parseAIResponse,
-  formatToolResult,
-  streamAI,
-  simulateStreamText,
-} from "@/lib/ai/huggingface";
-import { toolExecutor } from "@/lib/tools/executor";
+  runAgentLoop,
+  getLastFeeToolRun,
+  type ChatMessage,
+} from "@/lib/ai/agent-loop";
 import { verifyChatToken } from "@/lib/ai/verify-chat-token";
 import { checkRateLimit } from "@/lib/ai/rate-limit";
-import { encodeSseData } from "@/lib/ai/chat-sse";
+import { encodeSseData, SSE_RESPONSE_HEADERS } from "@/lib/ai/chat-sse";
+import { trimConversationHistory } from "@/lib/ai/conversation-history";
 import type { AiRole } from "@/lib/ai/tool-permissions";
-
-interface ChatMessage {
-  role: string;
-  content: string;
-}
 
 interface ChatRequestBody {
   messages: ChatMessage[];
   className?: string;
 }
-
-const SSE_HEADERS = {
-  "Content-Type": "text/event-stream",
-  "Cache-Control": "no-cache, no-transform",
-  Connection: "keep-alive",
-};
 
 export async function POST(req: Request) {
   try {
@@ -78,10 +66,11 @@ export async function POST(req: Request) {
     };
 
     const systemPrompt = getSystemPrompt(todayDate, ctx);
-    const fullMessages: ChatMessage[] = [
-      { role: "system", content: systemPrompt },
-      ...messages,
-    ];
+
+    // Client sends user/assistant only — system prompt is added server-side in runAgentLoop
+    const history = trimConversationHistory(
+      messages.filter((m) => m.role === "user" || m.role === "assistant")
+    );
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -95,13 +84,29 @@ export async function POST(req: Request) {
           controller.close();
         };
 
-        try {
-          const timeoutAt = Date.now() + 60_000;
+        sendData(JSON.stringify({ type: "status", phase: "thinking" }));
 
-          const aiResponse = await Promise.race([
-            askAI(fullMessages),
+        try {
+          const timeoutAt = Date.now() + 90_000;
+
+          const agentResult = await Promise.race([
+            runAgentLoop(history, systemPrompt, token, {
+              onThinking: () => {
+                sendData(JSON.stringify({ type: "status", phase: "thinking" }));
+              },
+              onToolStart: (tool, iteration) => {
+                sendData(
+                  JSON.stringify({
+                    type: "status",
+                    phase: "tool",
+                    tool,
+                    iteration,
+                  })
+                );
+              },
+            }),
             new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error("Timeout")), 60_000)
+              setTimeout(() => reject(new Error("Timeout")), 90_000)
             ),
           ]);
 
@@ -110,91 +115,27 @@ export async function POST(req: Request) {
             return;
           }
 
-          const parsed = parseAIResponse(aiResponse);
-
-          let toolCalledName: string | null = null;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          let toolArgsData: Record<string, any> | null = null;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          let toolResultData: any = null;
-
-          let streamMessages = [...fullMessages];
-
-          if (parsed.action === "tool_call" && parsed.tool) {
-            toolCalledName = parsed.tool;
-            toolArgsData = parsed.args || {};
-
-            try {
-              toolResultData = await toolExecutor(
-                toolCalledName,
-                toolArgsData,
-                token
-              );
-            } catch (execError) {
-              const err = execError as Error;
-              toolResultData = {
-                error: err.message || "Failed to execute tool.",
-              };
-            }
-
-            const resultMessage = formatToolResult(
-              toolCalledName,
-              toolResultData
-            );
-            streamMessages.push({ role: "assistant", content: aiResponse });
-            streamMessages.push({ role: "user", content: resultMessage });
-          } else if (parsed.action === "direct_reply" && parsed.message) {
-            sendData(
-              JSON.stringify({
-                type: "meta",
-                toolCalled: null,
-                toolArgs: null,
-                toolResult: null,
-              })
-            );
-
-            for await (const chunk of simulateStreamText(parsed.message)) {
-              if (Date.now() > timeoutAt) {
-                sendError("AI service request timed out. Please try again.");
-                return;
-              }
-              sendData(chunk);
-            }
-
-            sendData("[DONE]");
-            controller.close();
-            return;
-          } else {
-            sendData(
-              JSON.stringify({
-                type: "meta",
-                toolCalled: null,
-                toolArgs: null,
-                toolResult: null,
-              })
-            );
-
-            for await (const chunk of simulateStreamText(
-              "I could not understand that. Please try rephrasing."
-            )) {
-              sendData(chunk);
-            }
-
-            sendData("[DONE]");
-            controller.close();
-            return;
-          }
+          const toolsUsed = agentResult.toolResults.map((t) => t.tool);
+          const lastFee = getLastFeeToolRun(agentResult.toolResults);
 
           sendData(
             JSON.stringify({
               type: "meta",
-              toolCalled: toolCalledName,
-              toolArgs: toolArgsData,
-              toolResult: toolResultData,
+              toolCalled: lastFee?.tool ?? toolsUsed[toolsUsed.length - 1] ?? null,
+              toolArgs: lastFee?.args ?? agentResult.toolResults.at(-1)?.args ?? null,
+              toolResult:
+                lastFee?.result ?? agentResult.toolResults.at(-1)?.result ?? null,
+              toolResults: agentResult.toolResults,
+              toolsUsed,
+              iterations: agentResult.iterations,
             })
           );
 
-          for await (const chunk of streamAI(streamMessages)) {
+          const answerText =
+            agentResult.finalAnswer.trim() ||
+            "I retrieved the school data but could not generate a summary. Please try again.";
+
+          for await (const chunk of simulateStreamText(answerText)) {
             if (Date.now() > timeoutAt) {
               sendError("AI service request timed out. Please try again.");
               return;
@@ -215,7 +156,7 @@ export async function POST(req: Request) {
       },
     });
 
-    return new Response(stream, { headers: SSE_HEADERS });
+    return new Response(stream, { headers: SSE_RESPONSE_HEADERS });
   } catch (error) {
     const err = error as Error;
     return NextResponse.json(

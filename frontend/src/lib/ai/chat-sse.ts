@@ -1,12 +1,18 @@
+import type { ToolRunRecord } from "./agent-loop";
+
 export interface ChatStreamMeta {
   toolCalled: string | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   toolArgs: Record<string, any> | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   toolResult: any | null;
+  toolResults?: ToolRunRecord[];
+  toolsUsed?: string[];
+  iterations?: number;
 }
 
 export type ChatStreamEvent =
+  | { type: "status"; phase: "thinking" | "tool"; tool?: string; iteration?: number }
   | { type: "meta"; meta: ChatStreamMeta }
   | { type: "chunk"; text: string }
   | { type: "done" }
@@ -16,6 +22,14 @@ export type ChatStreamEvent =
 export function encodeSseData(payload: string): Uint8Array {
   return new TextEncoder().encode(`data: ${payload}\n\n`);
 }
+
+/** Standard SSE response headers for Next.js App Router streaming. */
+export const SSE_RESPONSE_HEADERS: Record<string, string> = {
+  "Content-Type": "text/event-stream; charset=utf-8",
+  "Cache-Control": "no-cache, no-transform",
+  Connection: "keep-alive",
+  "X-Accel-Buffering": "no",
+};
 
 /** Parse SSE buffer from /api/chat stream. */
 export function parseSseBuffer(
@@ -38,16 +52,32 @@ export function parseSseBuffer(
       try {
         const parsed = JSON.parse(payload) as {
           type?: string;
+          phase?: "thinking" | "tool";
+          tool?: string;
+          iteration?: number;
           message?: string;
           toolCalled?: string | null;
           toolArgs?: Record<string, unknown> | null;
           toolResult?: unknown;
+          toolResults?: ToolRunRecord[];
+          toolsUsed?: string[];
+          iterations?: number;
         };
 
         if (parsed.type === "error") {
           onEvent({
             type: "error",
             message: parsed.message ?? "Stream error",
+          });
+          continue;
+        }
+
+        if (parsed.type === "status" && parsed.phase) {
+          onEvent({
+            type: "status",
+            phase: parsed.phase,
+            tool: parsed.tool,
+            iteration: parsed.iteration,
           });
           continue;
         }
@@ -59,6 +89,9 @@ export function parseSseBuffer(
               toolCalled: parsed.toolCalled ?? null,
               toolArgs: (parsed.toolArgs as ChatStreamMeta["toolArgs"]) ?? null,
               toolResult: parsed.toolResult ?? null,
+              toolResults: parsed.toolResults,
+              toolsUsed: parsed.toolsUsed,
+              iterations: parsed.iterations,
             },
           });
           continue;

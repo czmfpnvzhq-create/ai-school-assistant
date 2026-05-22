@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ChatWindow } from "@/components/ChatWindow";
 import { ChatInput } from "@/components/ChatInput";
@@ -9,6 +9,11 @@ import { Message } from "@/components/MessageBubble";
 import { useAuthContext } from "@/lib/auth/AuthProvider";
 import { API_BASE_URL } from "@/lib/config";
 import { parseSseBuffer } from "@/lib/ai/chat-sse";
+import type { ToolRunRecord } from "@/lib/ai/agent-loop";
+import {
+  trimConversationHistory,
+  type HistoryMessage,
+} from "@/lib/ai/conversation-history";
 import type { AiRole } from "@/lib/ai/tool-permissions";
 
 interface AiAssistantPanelProps {
@@ -19,8 +24,13 @@ export function AiAssistantPanel({ role }: AiAssistantPanelProps) {
   const router = useRouter();
   const { user } = useAuthContext();
   const [messages, setMessages] = useState<Message[]>([]);
+  const [conversationHistory, setConversationHistory] = useState<HistoryMessage[]>(
+    []
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
+  const [agentStatus, setAgentStatus] = useState<"thinking" | "tool" | null>(null);
+  const [agentStatusTool, setAgentStatusTool] = useState<string | undefined>();
   const [error, setError] = useState<string | null>(null);
   const [teacherClassName, setTeacherClassName] = useState<string | undefined>();
 
@@ -42,10 +52,22 @@ export function AiAssistantPanel({ role }: AiAssistantPanelProps) {
       .catch(() => {});
   }, [role]);
 
+  const handleNewChat = useCallback(() => {
+    setMessages([]);
+    setConversationHistory([]);
+    setError(null);
+    setStreamingMessageId(null);
+    setAgentStatus(null);
+    setAgentStatusTool(undefined);
+    setIsLoading(false);
+  }, []);
+
   const handleSendMessage = async (content: string) => {
     setError(null);
     setIsLoading(true);
     setStreamingMessageId(null);
+    setAgentStatus("thinking");
+    setAgentStatusTool(undefined);
 
     const userMessage: Message = {
       id: Math.random().toString(36).substring(2, 9),
@@ -53,8 +75,14 @@ export function AiAssistantPanel({ role }: AiAssistantPanelProps) {
       content,
     };
 
-    const updatedMessages = [...messages, userMessage];
-    setMessages(updatedMessages);
+    const historyWithUser: HistoryMessage[] = [
+      ...conversationHistory,
+      { role: "user", content },
+    ];
+    const payloadHistory = trimConversationHistory(historyWithUser);
+
+    setMessages((prev) => [...prev, userMessage]);
+    setConversationHistory(historyWithUser);
 
     try {
       const token = localStorage.getItem("edunexus_token");
@@ -70,10 +98,7 @@ export function AiAssistantPanel({ role }: AiAssistantPanelProps) {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          messages: updatedMessages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
+          messages: payloadHistory,
           className: teacherClassName,
         }),
       });
@@ -99,6 +124,12 @@ export function AiAssistantPanel({ role }: AiAssistantPanelProps) {
           toolResult: data.toolResult,
         };
         setMessages((prev) => [...prev, assistantMessage]);
+        setConversationHistory((prev) =>
+          trimConversationHistory([
+            ...prev,
+            { role: "assistant", content: assistantMessage.content },
+          ])
+        );
         return;
       }
 
@@ -110,6 +141,9 @@ export function AiAssistantPanel({ role }: AiAssistantPanelProps) {
       const decoder = new TextDecoder();
       let buffer = "";
       let assistantId: string | null = null;
+      let finalContent = "";
+      let metaToolsUsed: string[] = [];
+      let metaToolResults: ToolRunRecord[] = [];
 
       while (true) {
         const { done, value } = await reader.read();
@@ -121,10 +155,21 @@ export function AiAssistantPanel({ role }: AiAssistantPanelProps) {
             throw new Error(event.message);
           }
 
+          if (event.type === "status") {
+            setAgentStatus(event.phase);
+            setAgentStatusTool(event.tool);
+            return;
+          }
+
           if (event.type === "meta") {
             assistantId = Math.random().toString(36).substring(2, 9);
             setStreamingMessageId(assistantId);
             setIsLoading(false);
+            setAgentStatus(null);
+            setAgentStatusTool(undefined);
+
+            metaToolsUsed = event.meta.toolsUsed ?? [];
+            metaToolResults = event.meta.toolResults ?? [];
 
             const metaMessage: Message = {
               id: assistantId,
@@ -133,12 +178,16 @@ export function AiAssistantPanel({ role }: AiAssistantPanelProps) {
               toolCalled: event.meta.toolCalled,
               toolArgs: event.meta.toolArgs,
               toolResult: event.meta.toolResult,
+              toolsUsed: metaToolsUsed,
+              toolResults: metaToolResults,
+              iterations: event.meta.iterations,
             };
             setMessages((prev) => [...prev, metaMessage]);
             return;
           }
 
           if (event.type === "chunk" && assistantId) {
+            finalContent += event.text;
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === assistantId
@@ -155,12 +204,27 @@ export function AiAssistantPanel({ role }: AiAssistantPanelProps) {
         });
       }
 
+      if (finalContent.trim()) {
+        setConversationHistory((prev) =>
+          trimConversationHistory([
+            ...prev,
+            { role: "assistant", content: finalContent },
+          ])
+        );
+      }
+
       setStreamingMessageId(null);
+      setAgentStatus(null);
+      setAgentStatusTool(undefined);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to communicate with AI assistant."
       );
       setStreamingMessageId(null);
+      setAgentStatus(null);
+      setAgentStatusTool(undefined);
+      setConversationHistory((prev) => prev.slice(0, -1));
+      setMessages((prev) => prev.slice(0, -1));
     } finally {
       setIsLoading(false);
     }
@@ -183,7 +247,7 @@ export function AiAssistantPanel({ role }: AiAssistantPanelProps) {
             Live data
           </span>
           <span className="text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
-            PDF reports
+            Multi-tool agent
           </span>
         </div>
       </div>
@@ -211,11 +275,7 @@ export function AiAssistantPanel({ role }: AiAssistantPanelProps) {
               {messages.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setMessages([]);
-                    setError(null);
-                    setStreamingMessageId(null);
-                  }}
+                  onClick={handleNewChat}
                   disabled={isLoading || !!streamingMessageId}
                   className="text-xs px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-700/50 transition-colors disabled:opacity-50"
                 >
@@ -229,6 +289,8 @@ export function AiAssistantPanel({ role }: AiAssistantPanelProps) {
             messages={messages}
             isLoading={isLoading}
             streamingMessageId={streamingMessageId}
+            agentStatus={agentStatus}
+            agentStatusTool={agentStatusTool}
             userName={user?.name}
             role={role}
             onSelectQuery={handleSendMessage}

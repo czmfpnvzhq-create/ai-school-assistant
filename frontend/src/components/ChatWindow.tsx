@@ -3,10 +3,14 @@ import { MessageBubble, Message } from "./MessageBubble";
 import { AiQuickChips } from "@/components/ai/AiQuickChips";
 import type { AiRole } from "@/lib/ai/tool-permissions";
 
+export type AgentStatusPhase = "thinking" | "tool" | null;
+
 interface ChatWindowProps {
   messages: Message[];
   isLoading: boolean;
   streamingMessageId?: string | null;
+  agentStatus?: AgentStatusPhase;
+  agentStatusTool?: string;
   userName?: string;
   role: AiRole;
   onSelectQuery?: (query: string) => void;
@@ -16,6 +20,8 @@ export function ChatWindow({
   messages,
   isLoading,
   streamingMessageId,
+  agentStatus,
+  agentStatusTool,
   userName,
   role,
   onSelectQuery,
@@ -24,9 +30,17 @@ export function ChatWindow({
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isLoading, streamingMessageId]);
+  }, [messages, isLoading, streamingMessageId, agentStatus]);
 
   const showThinking = isLoading && !streamingMessageId;
+  const thinkingTitle =
+    agentStatus === "tool" && agentStatusTool
+      ? `Running ${agentStatusTool}…`
+      : "Thinking…";
+  const thinkingSubtitle =
+    agentStatus === "tool"
+      ? "Fetching live data from the database"
+      : "Planning tools and checking your question";
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto ai-chat-mesh">
@@ -82,10 +96,8 @@ export function ChatWindow({
                 </span>
               </div>
               <div className="rounded-2xl border border-slate-700/40 bg-slate-900/50 px-4 py-3">
-                <p className="text-sm text-slate-300">Checking school records…</p>
-                <p className="text-[10px] text-slate-500 mt-1">
-                  Running tools &amp; loading answer
-                </p>
+                <p className="text-sm text-slate-300">{thinkingTitle}</p>
+                <p className="text-[10px] text-slate-500 mt-1">{thinkingSubtitle}</p>
               </div>
             </div>
           </div>

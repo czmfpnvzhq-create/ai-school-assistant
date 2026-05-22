@@ -2,6 +2,7 @@ import React from "react";
 import { FeeReportCard } from "@/components/ai/FeeReportCard";
 import { DataSourceDetails } from "@/components/ai/DataSourceDetails";
 import type { FeeReportData } from "@/lib/reports/fee-report-pdf";
+import type { ToolRunRecord } from "@/lib/ai/agent-loop";
 
 export interface Message {
   id: string;
@@ -12,6 +13,9 @@ export interface Message {
   toolArgs?: Record<string, any> | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   toolResult?: any | null;
+  toolsUsed?: string[];
+  toolResults?: ToolRunRecord[];
+  iterations?: number;
 }
 
 interface MessageBubbleProps {
@@ -84,9 +88,15 @@ export function MessageBubble({
     <div className="flex w-full justify-start gap-3 animate-fade-in-up">
       <AssistantAvatar />
       <div className="flex flex-col gap-2 min-w-0 flex-1 max-w-3xl">
-        <span className="text-[10px] font-medium text-slate-500">
-          EduNexus AI
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] font-medium text-slate-500">EduNexus AI</span>
+          {message.toolsUsed && message.toolsUsed.length > 0 && !isStreaming && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/25">
+              Used {message.toolsUsed.length} tool
+              {message.toolsUsed.length !== 1 ? "s" : ""}: {message.toolsUsed.join(", ")}
+            </span>
+          )}
+        </div>
 
         <div className="rounded-2xl rounded-tl-md border border-slate-700/50 bg-slate-900/60 backdrop-blur-sm px-4 py-3.5 text-sm text-slate-200 leading-relaxed shadow-sm">
           <div className="ai-message-prose whitespace-pre-wrap break-words">
@@ -99,13 +109,27 @@ export function MessageBubble({
           <FeeReportCard data={message.toolResult} userName={userName} />
         )}
 
-        {message.toolCalled && (
-          <DataSourceDetails
-            toolName={message.toolCalled}
-            toolArgs={message.toolArgs ?? null}
-            toolResult={message.toolResult ?? null}
-          />
-        )}
+        {!isStreaming &&
+          message.toolResults &&
+          message.toolResults.length > 0 &&
+          message.toolResults.map((run, idx) => (
+            <DataSourceDetails
+              key={`${run.tool}-${idx}`}
+              toolName={run.tool}
+              toolArgs={run.args}
+              toolResult={run.result}
+            />
+          ))}
+
+        {!isStreaming &&
+          message.toolCalled &&
+          (!message.toolResults || message.toolResults.length === 0) && (
+            <DataSourceDetails
+              toolName={message.toolCalled}
+              toolArgs={message.toolArgs ?? null}
+              toolResult={message.toolResult ?? null}
+            />
+          )}
       </div>
     </div>
   );

@@ -187,8 +187,90 @@ export interface AIResponsePayload {
   message?: string;
 }
 
+/** Extract top-level {...} blobs with balanced braces (handles nested args). */
+export function extractBalancedJsonObjects(text: string): string[] {
+  const results: string[] = [];
+  let depth = 0;
+  let start = -1;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === "{") {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+      if (depth === 0 && start >= 0) {
+        results.push(text.slice(start, i + 1));
+        start = -1;
+      }
+    }
+  }
+
+  return results;
+}
+
+function isValidToolCallPayload(
+  parsed: unknown
+): parsed is AIResponsePayload & { tool: string; args?: Record<string, unknown> } {
+  if (!parsed || typeof parsed !== "object") return false;
+  const p = parsed as AIResponsePayload;
+  return (
+    p.action === "tool_call" &&
+    typeof p.tool === "string" &&
+    p.tool.trim().length > 0
+  );
+}
+
+/** Parse every tool_call JSON in the response (Qwen sometimes outputs }{ concatenated). */
+export function parseAllToolCalls(
+  text: string
+): Array<AIResponsePayload & { tool: string; args: Record<string, unknown> }> {
+  const trimmed = text.trim();
+  const calls: Array<
+    AIResponsePayload & { tool: string; args: Record<string, unknown> }
+  > = [];
+
+  for (const blob of extractBalancedJsonObjects(trimmed)) {
+    try {
+      const parsed = JSON.parse(blob);
+      if (isValidToolCallPayload(parsed)) {
+        calls.push({
+          action: "tool_call",
+          tool: parsed.tool.trim(),
+          args: (parsed.args as Record<string, unknown>) ?? {},
+        });
+      }
+    } catch {
+      // skip invalid blob
+    }
+  }
+
+  return calls;
+}
+
+/** True when the model returned only JSON tool_call(s), not a user-facing answer. */
+export function isToolCallOnlyResponse(text: string): boolean {
+  const trimmed = text.trim();
+  const calls = parseAllToolCalls(trimmed);
+  if (calls.length === 0) return false;
+
+  const withoutJson = trimmed
+    .replace(/\{[\s\S]*?\}/g, "")
+    .replace(/[\s,]/g, "");
+  return withoutJson.length < 20;
+}
+
 export function parseAIResponse(text: string): AIResponsePayload {
   const trimmed = text.trim();
+  if (!trimmed) {
+    return { action: "direct_reply", message: "" };
+  }
+
+  const toolCalls = parseAllToolCalls(trimmed);
+  if (toolCalls.length > 0) {
+    return toolCalls[0];
+  }
 
   try {
     const parsed = JSON.parse(trimmed);
@@ -196,31 +278,16 @@ export function parseAIResponse(text: string): AIResponsePayload {
       return parsed as AIResponsePayload;
     }
   } catch {
-    // continue
+    // not a single JSON document
   }
 
-  try {
-    const jsonRegex = /\{[\s\S]*?"action"[\s\S]*?\}/g;
-    const matches = trimmed.match(jsonRegex);
-    if (matches) {
-      for (const match of matches) {
-        try {
-          const parsed = JSON.parse(match);
-          if (parsed && typeof parsed === "object" && "action" in parsed) {
-            return parsed as AIResponsePayload;
-          }
-        } catch {
-          // continue
-        }
-      }
-    }
-  } catch {
-    // ignore
+  if (isToolCallOnlyResponse(trimmed)) {
+    return { action: "direct_reply", message: "" };
   }
 
   return {
     action: "direct_reply",
-    message: text,
+    message: trimmed,
   };
 }
 

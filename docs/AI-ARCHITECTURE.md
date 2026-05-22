@@ -4,13 +4,13 @@
 
 ```
 User (Admin/Teacher UI)
-    → POST /api/chat  [JWT required, rate limited]
-        → Hugging Face (Qwen2.5-7B-Instruct)
-        → JSON tool_call parsed
-        → POST /tools/execute  [JWT + role guard]
-            → Prisma → PostgreSQL
-        → Second HF call with tool result
-    → SSE stream of final reply (token-by-token) + tool metadata in UI
+    → POST /api/chat  [JWT required, rate limited, last 6 messages]
+        → runAgentLoop (up to 5 iterations)
+            → Hugging Face askAI (tool decision / next step)
+            → JSON tool_call parsed → POST /tools/execute → append result
+            → repeat until plain-text final answer
+        → SSE stream of final reply (word-by-word) + toolsUsed metadata
+    → UI shows "Used N tools: …" + per-tool data source links
 ```
 
 ## Security
