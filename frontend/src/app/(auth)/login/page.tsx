@@ -1,60 +1,74 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuthContext } from "@/lib/auth/AuthProvider";
+import type { UserPayload } from "@/lib/auth/AuthProvider";
+
+const ROLE_DASHBOARD: Record<string, string> = {
+  ADMIN: "/dashboard/admin",
+  TEACHER: "/dashboard/teacher",
+  STUDENT: "/dashboard/student",
+  PARENT: "/dashboard/parent",
+};
 
 export default function LoginPage() {
   const router = useRouter();
   const { setSession } = useAuthContext();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("Teacher");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const prefetchDashboard = (role: string) => {
+    const path = ROLE_DASHBOARD[role];
+    if (path) router.prefetch(path);
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setLoading(true);
+
     try {
       const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Login failed");
-      setSession(data.token, data.user);
-      router.replace(`/dashboard/${data.user.role.toLowerCase()}`);
-    } catch (err: any) {
-      setError(err.message || "Login failed");
-    } finally {
+
+      if (!res.ok) {
+        throw new Error(data.message || data.error || "Login failed");
+      }
+
+      const user = data.user as UserPayload;
+      setSession(data.token, user);
+      router.replace(`/dashboard/${user.role.toLowerCase()}`);
+      router.prefetch(`/dashboard/${user.role.toLowerCase()}`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
       setLoading(false);
     }
   };
+  const testCreds = [
+    { role: "Admin", email: "admin@edunexus.com", pass: "admin123", color: "text-sky-400" },
+    { role: "Teacher", email: "teacher@edunexus.com", pass: "teacher123", color: "text-fuchsia-400" },
+    { role: "Student", email: "student@edunexus.com", pass: "student123", color: "text-emerald-400" },
+    { role: "Parent", email: "parent@edunexus.com", pass: "parent123", color: "text-orange-400" },
+  ];
 
   return (
     <div className="min-h-screen bg-black text-gray-200 flex items-center justify-center p-6">
-      <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-        <div className="hidden md:flex flex-col justify-center px-8 py-12 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 shadow-lg">
-          <h1 className="text-4xl font-extrabold text-white mb-2">EduNexus</h1>
-          <p className="text-slate-300 max-w-md">A modern school management portal — clean dashboards for teachers, students, and parents. Welcome back, please sign in to continue.</p>
-          <div className="mt-8">
-            <div className="inline-flex items-center gap-3 text-sm text-slate-400">
-              <span className="px-3 py-1 bg-slate-700 rounded-full">Portfolio-ready</span>
-              <span className="px-3 py-1 bg-slate-700 rounded-full">Tailwind</span>
-              <span className="px-3 py-1 bg-slate-700 rounded-full">Next.js</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="w-full max-w-md mx-auto bg-slate-900 p-8 rounded-2xl shadow-xl">
-          <div className="mb-4">
-            <h2 className="text-2xl font-bold">EduNexus Portal</h2>
-            <p className="text-sm text-slate-400">Sign in to access your dashboard</p>
-          </div>
+      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+        {/* Left: Login card */}
+        <div className="mx-auto w-full max-w-md bg-slate-900 p-8 rounded-2xl shadow-xl">
+          <h2 className="text-3xl font-bold mb-1">Welcome back</h2>
+          <p className="text-sm text-slate-400 mb-6">Sign in to access your dashboard</p>
 
           {error && <div className="mb-4 text-red-400">{error}</div>}
 
@@ -68,24 +82,6 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 aria-label="email"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm text-slate-400 mb-1">Role</label>
-              <div className="relative">
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className="w-full p-3 rounded-lg bg-slate-800 appearance-none"
-                  aria-label="role"
-                >
-                  <option>Teacher</option>
-                  <option>Student</option>
-                  <option>Parent</option>
-                  <option>Admin</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">▾</div>
-              </div>
             </div>
 
             <div>
@@ -105,9 +101,105 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-4 text-sm text-slate-400 flex justify-between items-center">
-            <div>Don&apos;t have an account? <Link href="/register" className="text-blue-400">Register</Link></div>
-            <div className="text-xs text-slate-500">Role shown is for convenience — actual role validated on login</div>
+          <div className="mt-4 text-sm text-slate-400">
+            Don&apos;t have an account? <Link href="/register" className="text-blue-400">Register</Link>
+          </div>
+        </div>
+
+        {/* Right: Test credentials panel */}
+        <div className="mx-auto w-full max-w-md text-slate-300">
+          <h3 className="text-sm font-semibold text-slate-400 mb-4">TEST CREDENTIALS</h3>
+          <div className="grid grid-cols-2 gap-4">
+            {testCreds.map((t) => (
+              <div key={t.role} className="bg-slate-900 p-4 rounded-lg border border-slate-800">
+                <div className={`font-semibold ${t.color}`}>{t.role}</div>
+                <div className="mt-2 text-sm text-slate-300">{t.email}</div>
+                <div className="text-sm text-slate-400">{t.pass}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 text-xs text-slate-500">Tip: click a role and copy credentials to test login.</div>
+        </div>
+      </div>
+    </div>
+  );
+                if (email.includes("admin")) prefetchDashboard("ADMIN");
+                else if (email.includes("teacher")) prefetchDashboard("TEACHER");
+                else if (email.includes("student")) prefetchDashboard("STUDENT");
+                else if (email.includes("parent")) prefetchDashboard("PARENT");
+              }}
+              className="w-full px-4 py-3 bg-black/50 border border-white/10 rounded-xl focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all text-white placeholder-gray-600"
+              placeholder="you@edunexus.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-1">Password</label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 bg-black/50 border border-white/10 rounded-xl focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all text-white placeholder-gray-600"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-3 text-gray-500 hover:text-gray-300 transition-colors"
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-xl font-medium transition-all duration-300 shadow-[0_0_20px_rgba(37,99,235,0.2)] hover:shadow-[0_0_30px_rgba(37,99,235,0.4)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Signing in…
+              </>
+            ) : (
+              "Sign In"
+            )}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center text-sm text-gray-400">
+          Don&apos;t have an account?{" "}
+          <Link href="/register" className="text-blue-400 hover:text-blue-300 transition-colors">
+            Register here
+          </Link>
+        </div>
+
+        <div className="mt-8 pt-6 border-t border-white/5">
+          <p className="text-xs text-gray-500 mb-3 uppercase tracking-wider font-semibold">Test Credentials</p>
+          <div className="grid grid-cols-2 gap-2 text-xs text-gray-400">
+            <div className="bg-white/5 p-2 rounded border border-white/5">
+              <span className="text-blue-400 block mb-1">Admin</span>
+              admin@edunexus.com<br />admin123
+            </div>
+            <div className="bg-white/5 p-2 rounded border border-white/5">
+              <span className="text-purple-400 block mb-1">Teacher</span>
+              teacher@edunexus.com<br />teacher123
+            </div>
+            <div className="bg-white/5 p-2 rounded border border-white/5">
+              <span className="text-green-400 block mb-1">Student</span>
+              student@edunexus.com<br />student123
+            </div>
+            <div className="bg-white/5 p-2 rounded border border-white/5">
+              <span className="text-orange-400 block mb-1">Parent</span>
+              parent@edunexus.com<br />parent123
+            </div>
           </div>
         </div>
       </div>
