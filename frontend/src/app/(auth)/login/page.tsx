@@ -58,16 +58,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#030313] to-[#050505] text-gray-200 flex items-center justify-center p-6">
-      {/* Decorative SVGs */}
-      <svg className="absolute left-8 top-8 w-48 h-48 opacity-10" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="g1" x1="0" x2="1">
-            <stop offset="0%" stopColor="#4f46e5" />
-            <stop offset="100%" stopColor="#06b6d4" />
-          </linearGradient>
-        </defs>
-        <circle cx="100" cy="100" r="80" fill="url(#g1)" />
-      </svg>
+      {/* Decorative ambient glows */}
+      <div className="absolute left-8 top-8 w-48 h-48 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute right-12 bottom-12 w-56 h-56 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
         {/* Left hero */}
