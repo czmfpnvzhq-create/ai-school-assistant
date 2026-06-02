@@ -63,6 +63,16 @@ export default function LoginPage() {
     { role: "Parent", email: "parent@edunexus.com", pass: "parent123", color: "text-orange-400" },
   ];
 
+  const copyAndFill = async (emailVal: string, passVal: string) => {
+    try {
+      await navigator.clipboard.writeText(`${emailVal}\n${passVal}`);
+    } catch (_) {
+      // ignore clipboard errors
+    }
+    setEmail(emailVal);
+    setPassword(passVal);
+  };
+
   return (
     <div className="min-h-screen bg-black text-gray-200 flex items-center justify-center p-6">
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
@@ -126,18 +136,25 @@ export default function LoginPage() {
 
         {/* Right: Test credentials panel */}
         <div className="mx-auto w-full max-w-md text-slate-300">
-          <h3 className="text-sm font-semibold text-slate-400 mb-4">TEST CREDENTIALS</h3>
-          <div className="grid grid-cols-2 gap-4">
-            {testCreds.map((t) => (
-              <div key={t.role} className="bg-slate-900 p-4 rounded-lg border border-slate-800">
-                <div className={`font-semibold ${t.color}`}>{t.role}</div>
-                <div className="mt-2 text-sm text-slate-300">{t.email}</div>
-                <div className="text-sm text-slate-400">{t.pass}</div>
-              </div>
-            ))}
-          </div>
+          <div className="rounded-2xl bg-gradient-to-b from-slate-900/60 to-slate-900/40 p-6 border border-slate-800 shadow-lg">
+            <h3 className="text-sm font-semibold text-slate-400 mb-4">TEST CREDENTIALS</h3>
+            <div className="grid grid-cols-2 gap-4">
+              {testCreds.map((t) => (
+                <button
+                  key={t.role}
+                  type="button"
+                  onClick={() => copyAndFill(t.email, t.pass)}
+                  className="text-left bg-slate-800 hover:bg-slate-700/80 p-4 rounded-lg border border-slate-800 transition"
+                >
+                  <div className={`font-semibold ${t.color}`}>{t.role}</div>
+                  <div className="mt-2 text-sm text-slate-300">{t.email}</div>
+                  <div className="text-sm text-slate-400">{t.pass}</div>
+                </button>
+              ))}
+            </div>
 
-          <div className="mt-6 text-xs text-slate-500">Tip: click a role and copy credentials to test login.</div>
+            <div className="mt-6 text-xs text-slate-500">Tip: click a card to fill and copy credentials.</div>
+          </div>
         </div>
       </div>
     </div>
