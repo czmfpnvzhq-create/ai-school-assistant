@@ -21,7 +21,7 @@ export function Footer() {
 
         <div className="flex flex-wrap items-center gap-6 font-dm-sans text-sm">
           <a
-            href="https://github.com"
+            href="https://github.com/czmfpnvzhq-create/ai-school-assistant"
             target="_blank"
             rel="noopener noreferrer"
             className="text-slate-400 transition hover:text-white"

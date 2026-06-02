@@ -44,7 +44,7 @@ export function HeroSection() {
                 <span aria-hidden>→</span>
               </Link>
               <a
-                href="https://github.com"
+                href="https://github.com/czmfpnvzhq-create/ai-school-assistant"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center rounded-xl border border-slate-700/80 px-6 py-3.5 font-dm-sans text-sm font-medium text-slate-300 transition hover:border-slate-600 hover:bg-slate-900/50 hover:text-white"

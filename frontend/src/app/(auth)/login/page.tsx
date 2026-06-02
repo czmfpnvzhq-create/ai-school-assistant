@@ -105,8 +105,8 @@ export default function LoginPage() {
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
         {/* Left: Login + hero */}
         <div className="relative mx-auto w-full max-w-md">
-          <div className="absolute -left-20 -top-20 w-72 h-72 rounded-full bg-gradient-to-r from-purple-600 to-indigo-500 opacity-30 blur-3xl pointer-events-none" />
-          <div className="absolute -right-16 bottom-10 w-56 h-56 rounded-full bg-gradient-to-r from-rose-500 to-yellow-400 opacity-20 blur-2xl pointer-events-none" />
+          <div className="absolute -left-20 -top-20 w-72 h-72 rounded-full bg-gradient-to-r from-blue-600 to-cyan-400 opacity-30 blur-3xl pointer-events-none" />
+          <div className="absolute -right-16 bottom-10 w-56 h-56 rounded-full bg-gradient-to-r from-blue-500 to-blue-300 opacity-18 blur-2xl pointer-events-none" />
 
           <div className="relative bg-gradient-to-br from-slate-900/60 to-slate-900/40 p-8 rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-sm">
             <div className="mb-6">
@@ -157,7 +157,7 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <button className="w-full py-3 px-4 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 rounded-xl text-white font-semibold shadow-[0_8px_30px_rgba(99,102,241,0.15)] transition-all" disabled={loading}>
+              <button className="w-full py-3 px-4 bg-gradient-to-r from-landing-accent to-blue-400 hover:from-blue-500 hover:to-blue-400 rounded-xl text-white font-semibold shadow-[0_8px_30px_rgba(59,130,246,0.15)] transition-all" disabled={loading}>
                 {loading ? "Signing in…" : "Sign In"}
               </button>
             </form>
