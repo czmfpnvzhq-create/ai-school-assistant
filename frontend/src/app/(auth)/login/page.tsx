@@ -57,43 +57,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#030313] to-[#050505] text-gray-200 flex items-center justify-center p-6">
-      {/* Decorative ambient glows */}
-      <div className="absolute left-8 top-8 w-48 h-48 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute right-12 bottom-12 w-56 h-56 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
+    <div className="min-h-screen bg-[#050505] text-gray-200 flex items-center justify-center p-4">
+      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
-        {/* Left hero */}
-        <div className="hidden lg:flex flex-col justify-center px-8">
-          <div className="mb-6">
-            <div className="inline-flex items-center gap-3 mb-4">
-              <div className="text-3xl bg-slate-800 p-3 rounded-xl border border-slate-700">🎓</div>
-              <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">EduNexus</h1>
-            </div>
-            <p className="text-slate-400 max-w-xl leading-relaxed">A beautiful school management portal — fast, secure, and delightful to use. Sign in to manage your classes, attendance, grades and more.</p>
-          </div>
-          <div className="mt-6 grid grid-cols-2 gap-4">
-            <div className="p-6 bg-slate-900/50 rounded-2xl border border-white/5 shadow-md">
-              <h3 className="text-sm text-slate-400 uppercase tracking-widest">Secure</h3>
-              <p className="text-lg font-bold text-slate-200">Enterprise-grade auth</p>
-            </div>
-            <div className="p-6 bg-slate-900/50 rounded-2xl border border-white/5 shadow-md">
-              <h3 className="text-sm text-slate-400 uppercase tracking-widest">Fast</h3>
-              <p className="text-lg font-bold text-slate-200">Optimized for teachers</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: form card */}
-        <div className="w-full flex items-center justify-center">
-          <div className="w-full max-w-md bg-white/[0.02] border border-white/[0.05] p-8 rounded-2xl shadow-2xl backdrop-blur-xl relative z-10">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-2xl font-bold mb-1 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">EduNexus Portal</h2>
-                <p className="text-gray-400 text-sm">Sign in to access your dashboard</p>
-              </div>
-              <div className="text-sm text-slate-400">Welcome back 👋</div>
-            </div>
+      <div className="w-full max-w-md bg-white/[0.02] border border-white/[0.05] p-8 rounded-2xl shadow-2xl backdrop-blur-xl relative z-10">
+        <h2 className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+          EduNexus Portal
+        </h2>
+        <p className="text-gray-400 mb-8">Sign in to access your dashboard</p>
 
         {error && (
           <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
