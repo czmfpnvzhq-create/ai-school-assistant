@@ -63,74 +63,109 @@ export default function LoginPage() {
     { role: "Parent", email: "parent@edunexus.com", pass: "parent123", color: "text-orange-400" },
   ];
 
+  const [copied, setCopied] = useState<string | null>(null);
+
   const copyAndFill = async (emailVal: string, passVal: string) => {
     try {
       await navigator.clipboard.writeText(`${emailVal}\n${passVal}`);
+      setCopied(emailVal);
+      setTimeout(() => setCopied(null), 1800);
     } catch (_) {
-      // ignore clipboard errors
+      setCopied(null);
     }
     setEmail(emailVal);
     setPassword(passVal);
   };
 
+  const signInWith = async (emailVal: string, passVal: string) => {
+    setEmail(emailVal);
+    setPassword(passVal);
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailVal, password: passVal }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || data.error || "Login failed");
+      const user = data.user as UserPayload;
+      setSession(data.token, user);
+      router.replace(`/dashboard/${user.role.toLowerCase()}`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-gray-200 flex items-center justify-center p-6">
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-        {/* Left: Login card */}
-        <div className="mx-auto w-full max-w-md bg-slate-900 p-8 rounded-2xl shadow-xl">
-          <h2 className="text-3xl font-bold mb-1">Welcome back</h2>
-          <p className="text-sm text-slate-400 mb-6">Sign in to access your dashboard</p>
+        {/* Left: Login + hero */}
+        <div className="relative mx-auto w-full max-w-md">
+          <div className="absolute -left-20 -top-20 w-72 h-72 rounded-full bg-gradient-to-r from-purple-600 to-indigo-500 opacity-30 blur-3xl pointer-events-none" />
+          <div className="absolute -right-16 bottom-10 w-56 h-56 rounded-full bg-gradient-to-r from-rose-500 to-yellow-400 opacity-20 blur-2xl pointer-events-none" />
 
-          {error && <div className="mb-4 text-red-400">{error}</div>}
-
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-sm text-slate-400 mb-1">Email</label>
-              <input
-                placeholder="you@school.edu"
-                className="w-full p-3 rounded-lg bg-slate-800 placeholder:text-slate-500"
-                value={email}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setEmail(v);
-                  const lower = v.toLowerCase();
-                  if (lower.includes("admin")) prefetchDashboard("ADMIN");
-                  else if (lower.includes("teacher")) prefetchDashboard("TEACHER");
-                  else if (lower.includes("student")) prefetchDashboard("STUDENT");
-                  else if (lower.includes("parent")) prefetchDashboard("PARENT");
-                }}
-                aria-label="email"
-              />
+          <div className="relative bg-gradient-to-br from-slate-900/60 to-slate-900/40 p-8 rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-sm">
+            <div className="mb-6">
+              <h1 className="text-3xl font-extrabold text-white">EduNexus</h1>
+              <p className="text-slate-300 mt-2">Smart dashboards for teachers, students and parents — built with Next.js & Tailwind.</p>
             </div>
 
-            <div>
-              <label className="block text-sm text-slate-400 mb-1">Password</label>
+            {error && <div className="mb-4 text-red-400">{error}</div>}
+
+            <form onSubmit={handleLogin} className="space-y-4">
               <div className="relative">
+                <label className="block text-sm text-slate-400 mb-1">Email</label>
                 <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full p-3 rounded-lg bg-slate-800 placeholder:text-slate-500"
-                  placeholder="Your password"
+                  placeholder="you@school.edu"
+                  className="w-full p-3 rounded-xl bg-black/40 border border-white/5 placeholder:text-slate-500 text-white"
+                  value={email}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setEmail(v);
+                    const lower = v.toLowerCase();
+                    if (lower.includes("admin")) prefetchDashboard("ADMIN");
+                    else if (lower.includes("teacher")) prefetchDashboard("TEACHER");
+                    else if (lower.includes("student")) prefetchDashboard("STUDENT");
+                    else if (lower.includes("parent")) prefetchDashboard("PARENT");
+                  }}
+                  aria-label="email"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-200 transition"
-                >
-                  {showPassword ? "Hide" : "Show"}
-                </button>
               </div>
+
+              <div className="relative">
+                <label className="block text-sm text-slate-400 mb-1">Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full p-3 rounded-xl bg-black/40 border border-white/5 placeholder:text-slate-500 text-white"
+                    placeholder="Your password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-gray-300 hover:text-white transition"
+                  >
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
+              </div>
+
+              <button className="w-full py-3 px-4 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 rounded-xl text-white font-semibold shadow-[0_8px_30px_rgba(99,102,241,0.15)] transition-all" disabled={loading}>
+                {loading ? "Signing in…" : "Sign In"}
+              </button>
+            </form>
+
+            <div className="mt-4 text-sm text-slate-400 flex items-center justify-between">
+              <div>Don&apos;t have an account? <Link href="/register" className="text-indigo-300">Register</Link></div>
+              <div className="text-xs text-slate-500">Portfolio-ready · Tailwind</div>
             </div>
-
-            <button className="w-full py-3 bg-blue-600 rounded-lg text-white font-medium hover:bg-blue-700 transition" disabled={loading}>
-              {loading ? "Signing in…" : "Sign In"}
-            </button>
-          </form>
-
-          <div className="mt-4 text-sm text-slate-400">
-            Don&apos;t have an account? <Link href="/register" className="text-blue-400">Register</Link>
           </div>
         </div>
 
