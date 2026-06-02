@@ -45,14 +45,32 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-gray-200 flex items-center justify-center p-4">
-      {/* Background ambient glows */}
-      <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
-      
-      <div className="w-full max-w-md bg-white/[0.02] border border-white/[0.05] p-8 rounded-2xl shadow-2xl backdrop-blur-xl relative z-10">
-        <h2 className="text-3xl font-bold mb-2 bg-gradient-to-r from-purple-400 to-blue-500 bg-clip-text text-transparent">Create Account</h2>
-        <p className="text-gray-400 mb-8">Join the EduNexus platform</p>
+    <div className="min-h-screen bg-gradient-to-b from-[#030313] to-[#050505] text-gray-200 flex items-center justify-center p-6">
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+        <div className="hidden lg:flex flex-col justify-center px-8">
+          <div className="mb-6">
+            <div className="inline-flex items-center gap-3 mb-4">
+              <div className="text-3xl bg-slate-800 p-3 rounded-xl border border-slate-700">🎓</div>
+              <h1 className="text-4xl font-extrabold bg-gradient-to-r from-purple-400 to-blue-500 bg-clip-text text-transparent">Create your EduNexus account</h1>
+            </div>
+            <p className="text-slate-400 max-w-xl leading-relaxed">Get started with EduNexus — manage classes, take attendance, and stay connected with your school community.</p>
+          </div>
+          <div className="mt-6 grid grid-cols-2 gap-4">
+            <div className="p-6 bg-slate-900/50 rounded-2xl border border-white/5 shadow-md">
+              <h3 className="text-sm text-slate-400 uppercase tracking-widest">Easy</h3>
+              <p className="text-lg font-bold text-slate-200">Sign up in seconds</p>
+            </div>
+            <div className="p-6 bg-slate-900/50 rounded-2xl border border-white/5 shadow-md">
+              <h3 className="text-sm text-slate-400 uppercase tracking-widest">Secure</h3>
+              <p className="text-lg font-bold text-slate-200">Trusted by schools</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="w-full flex items-center justify-center">
+          <div className="w-full max-w-md bg-white/[0.02] border border-white/[0.05] p-8 rounded-2xl shadow-2xl backdrop-blur-xl relative z-10">
+            <h2 className="text-2xl font-bold mb-1 bg-gradient-to-r from-purple-400 to-blue-500 bg-clip-text text-transparent">Create Account</h2>
+            <p className="text-gray-400 mb-6 text-sm">Join the EduNexus platform</p>
 
         {error && (
           <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
@@ -130,11 +148,13 @@ export default function RegisterPage() {
           </button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-gray-400">
-          Already have an account?{" "}
-          <Link href="/login" className="text-purple-400 hover:text-purple-300 transition-colors">
-            Sign in here
-          </Link>
+            <div className="mt-6 text-center text-sm text-gray-400">
+              Already have an account? {" "}
+              <Link href="/login" className="text-purple-400 hover:text-purple-300 transition-colors">
+                Sign in here
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </div>
