@@ -323,3 +323,4 @@ export function AiAssistantPanel({ role }: AiAssistantPanelProps) {
     </div>
   );
 }
+export default AiAssistantPanel;

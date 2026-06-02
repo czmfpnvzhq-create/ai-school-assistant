@@ -4,10 +4,10 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   experimental: {
-    optimizePackageImports: ["recharts"],
+    optimizePackageImports: ["recharts", "lucide-react"],
   },
 };
 

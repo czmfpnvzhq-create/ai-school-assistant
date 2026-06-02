@@ -48,10 +48,8 @@ export default function LoginPage() {
 
       const user = data.user as UserPayload;
       setSession(data.token, user);
-      prefetchDashboard(user.role);
-
-      const target = ROLE_DASHBOARD[user.role] || "/dashboard/admin";
-      router.replace(target);
+      router.replace(`/dashboard/${user.role.toLowerCase()}`);
+      router.prefetch(`/dashboard/${user.role.toLowerCase()}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred");
       setLoading(false);

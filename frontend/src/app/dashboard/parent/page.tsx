@@ -96,7 +96,7 @@ export default function ParentDashboard() {
               </div>
               <div>
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Overall Grade</p>
-                <p className="text-lg font-extrabold text-blue-400">{child.gradeAvg}% ({getGradeLetter(child.gradeAvg)})</p>
+                <p className="text-lg font-extrabold text-blue-400">{typeof child.gradeAvg === 'number' ? `${child.gradeAvg.toFixed(2)}%` : '-'} ({getGradeLetter(child.gradeAvg)})</p>
               </div>
             </div>
           </div>

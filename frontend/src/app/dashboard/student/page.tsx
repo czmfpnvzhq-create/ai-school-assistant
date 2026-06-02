@@ -177,7 +177,7 @@ export default function StudentDashboard() {
               </div>
               <div>
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Overall Grade</p>
-                <p className="text-lg font-extrabold text-blue-400">{student.gradeAvg}% ({getGradeLetter(student.gradeAvg)})</p>
+                <p className="text-lg font-extrabold text-blue-400">{typeof student.gradeAvg === 'number' ? `${student.gradeAvg.toFixed(2)}%` : '-'} ({getGradeLetter(student.gradeAvg)})</p>
               </div>
             </div>
           </div>

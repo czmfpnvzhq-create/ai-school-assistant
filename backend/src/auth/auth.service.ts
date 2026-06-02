@@ -1,10 +1,19 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 
+/** Lower rounds = faster login compare; 8 is fine for demo/school apps */
+const BCRYPT_ROUNDS = 8;
+
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
@@ -26,7 +35,7 @@ export class AuthService {
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
     // Create user
     const user = await this.prisma.user.create({
@@ -54,22 +63,26 @@ export class AuthService {
   }
 
   async login(body: any) {
+    const started = Date.now();
     const { email, password } = body;
 
     if (!email || !password) {
       throw new BadRequestException('Missing email or password');
     }
 
-    // Find user
     const user = await this.prisma.user.findUnique({
       where: { email },
     });
+    const dbMs = Date.now() - started;
+
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    // Check password
+    const compareStart = Date.now();
     const isPasswordValid = await bcrypt.compare(password, user.password);
+    const bcryptMs = Date.now() - compareStart;
+
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid email or password');
     }
@@ -82,6 +95,17 @@ export class AuthService {
     };
 
     const token = this.jwtService.sign(tokenPayload);
+    const totalMs = Date.now() - started;
+
+    if (totalMs > 300) {
+      this.logger.warn(
+        `Login slow: ${totalMs}ms total (db ${dbMs}ms, bcrypt ${bcryptMs}ms) for ${email}`,
+      );
+    } else {
+      this.logger.debug(
+        `Login: ${totalMs}ms (db ${dbMs}ms, bcrypt ${bcryptMs}ms)`,
+      );
+    }
 
     return {
       token,

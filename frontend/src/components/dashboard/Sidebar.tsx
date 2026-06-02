@@ -123,8 +123,7 @@ export function Sidebar() {
             <Link
               key={link.path}
               href={link.path}
-              prefetch={true}
-              onMouseEnter={() => router.prefetch(link.path)}
+              prefetch={link.name === "AI Assistant" ? false : true}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors duration-150 group ${
                 isActive
                   ? "bg-blue-600/15 text-blue-400 border border-blue-500/20"
