@@ -66,6 +66,14 @@ export function Navbar() {
           >
             Login
           </Link>
+          <a
+            href="https://www.linkedin.com/in/qasimrazafullstack"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-lg border border-slate-700/60 px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-800/50"
+          >
+            Hire Me
+          </a>
           <Link
             href="/login"
             className="rounded-lg bg-landing-accent px-4 py-2 font-dm-sans text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition hover:bg-blue-400"

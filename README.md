@@ -1,203 +1,140 @@
-# EduNexus
+# EduNexus: AI-Agent Powered School Management SaaS
 
-**AI-powered school management** — multi-role dashboards, live PostgreSQL data, and an **agentic assistant** that calls real tools (not a ChatGPT wrapper).
+EduNexus is a production-ready, full-stack school management system featuring multi-role dashboards, live PostgreSQL database access, and a secure **Agentic AI Assistant** that operates via function calling (tool use) rather than static prompts or generic API wrappers.
 
-[![Next.js](https://img.shields.io/badge/Next.js-14-black?style=flat-square&logo=next.js)](https://nextjs.org/)
-[![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?style=flat-square&logo=nestjs)](https://nestjs.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-4169E1?style=flat-square&logo=postgresql)](https://neon.tech/)
-[![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?style=flat-square&logo=prisma)](https://www.prisma.io/)
-[![Hugging Face](https://img.shields.io/badge/AI-Qwen2.5--7B-yellow?style=flat-square)](https://huggingface.co/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
-
-> **Live demo:** _Add your Vercel URL after deploy — see [DEPLOYMENT-FREE.md](docs/DEPLOYMENT-FREE.md)_
+[![Next.js](https://img.shields.io/badge/Next.js-14.2-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![NestJS](https://img.shields.io/badge/NestJS-11.0-E0234E?style=for-the-badge&logo=nestjs)](https://nestjs.com/)
+[![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?style=for-the-badge&logo=prisma)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-4169E1?style=for-the-badge&logo=postgresql)](https://neon.tech/)
+[![HuggingFace](https://img.shields.io/badge/Hugging%20Face-Qwen2.5-yellow?style=for-the-badge)](https://huggingface.co/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 
 ---
 
-## Why this project stands out (top-tier portfolio)
+## 🚀 Live Demo & Visuals
 
-Most “AI school apps” are chat UIs on top of static prompts. EduNexus is built like a **production SaaS**:
+> 🔗 **Live URL:** [Insert your deployed Vercel URL here]  
+> 📹 **Walkthrough Video:** [Link a 1-minute Loom demo showing login and AI tool calling]
 
-| Differentiator | What it proves |
-|----------------|----------------|
-| **Agentic tool loop** | Model plans → calls `get_top_students`, `get_attendance_report`, etc. → synthesizes grounded answers |
-| **Zero hallucinated students** | AI only speaks from Prisma/PostgreSQL via NestJS tools |
-| **4-role RBAC** | JWT on every route; per-role AI tool allowlists |
-| **Streaming UX** | SSE status (`thinking`, `tool`) + streamed final reply |
-| **Real school context** | Urdu names, PKR fees, Class 6–10 seed data |
-| **Full stack ownership** | Next.js 14 App Router + NestJS API + Prisma + landing page |
-
-**Ideal for:** Upwork portfolio, LinkedIn featured project, MERN→agentic career pivot story.
+### Screenshots
+*Deploy the app and paste screenshots into `docs/screenshots/` to replace these placeholders.*
+| Landing Page | Admin Dashboard | Agentic AI Assistant |
+| :---: | :---: | :---: |
+| _[Add landing.png]_ | _[Add admin-dashboard.png]_ | _[Add ai-chat.png]_ |
 
 ---
 
-## Demo
+## 🔥 Portfolio Value: Why This Project Reaches the Top 5%
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@edunexus.com | admin123 |
-| Teacher | teacher@edunexus.com | teacher123 |
-| Student | student@edunexus.com | student123 |
-| Parent | parent@edunexus.com | parent123 |
+Most freelance developers show basic CRUD apps or simple "AI chatbot wrappers." EduNexus is designed to prove you can build **production-ready, secure, and smart SaaS products**.
 
-**Try the AI (admin/teacher):**
-
-- *“Who are the top students in Class 6 and what is their attendance this week?”*
-- *“What is the fee collection rate?”*
-- *“Find student Ahmed Raza”*
-
----
-
-## Screenshots
-
-_Add after deploy: `docs/screenshots/landing.png`, `dashboard.png`, `ai-assistant.png`_
-
-| Landing | Admin dashboard | AI assistant |
-|---------|-----------------|--------------|
-| _pending_ | _pending_ | _pending_ |
+### Key Differentiators:
+1. **Agentic Tool Loop:** The AI doesn't hallucinate student records. It translates natural language into structured JSON actions, executes database queries via a NestJS API with Prisma, and synthesizes grounded answers based solely on live data.
+2. **Strict Multi-Role Auth & RBAC:** Features four core roles:
+   * **Admin:** Full school overview, financial metrics, student/teacher management, and AI fee reports.
+   * **Teacher:** Attendance marking, grading, notices, and AI class queries.
+   * **Student:** Personal grade cards, attendance analytics, and notice board.
+   * **Parent:** Performance profiles, attendance logs, and fee payments for their linked children.
+3. **Granular AI Security Guardrails:** Role-based access control (RBAC) extends directly to AI tools. Teachers cannot trigger student additions or view financial fee reports via AI commands.
+4. **Performance Optimized:** Uses parallel queries, 60s memory caching for heavy admin stats, API request deduplication, and Server-Sent Events (SSE) for a fluid AI thinking/streaming experience.
 
 ---
 
-## Stack
+## 🏗️ System Architecture
 
-| Layer | Technology |
-|--------|------------|
-| Frontend | Next.js 14, React 18, Tailwind, App Router |
-| Backend | NestJS 11, Prisma, JWT, bcrypt |
-| Database | PostgreSQL (Neon-compatible) |
-| AI | Hugging Face Inference — Qwen2.5-7B-Instruct |
-| Auth | JWT (`jose` middleware + cookie), role guards on `/tools/execute` |
-
----
-
-## Architecture (high level)
-
-```
-Browser
-  → Next.js (UI + /api/chat SSE)
-       → Hugging Face (reasoning + tool JSON)
-       → NestJS /tools/execute (JWT + role check)
-            → Prisma → PostgreSQL
+```mermaid
+graph TD
+    Browser[Browser / Next.js Client] -->|1. Natural Language Prompt| NextAPI[Next.js API Route /api/chat]
+    NextAPI -->|2. System Prompts + Messages| HF[Hugging Face Qwen-2.5-7B]
+    HF -->|3. Tool Use JSON Action| NextAPI
+    NextAPI -->|4. JWT Authorized Request| NestAPI[NestJS Backend API /tools/execute]
+    NestAPI -->|5. Role & Tool Auth Check| DB[Neon Serverless PostgreSQL]
+    DB -->|6. Grounded Data| NestAPI
+    NestAPI -->|7. JSON Response| NextAPI
+    NextAPI -->|8. Context + Prompt| HF
+    HF -->|9. Final Response Streaming| Browser
 ```
 
-Details: [docs/AI-ARCHITECTURE.md](docs/AI-ARCHITECTURE.md) · Full reference: [docs/PROJECT-MASTER-GUIDE.md](docs/PROJECT-MASTER-GUIDE.md)
+---
+
+## 🛠️ Tech Stack & Key Modules
+
+* **Frontend:** Next.js 14 (App Router), React 18, Tailwind CSS, Recharts for analytics.
+* **Backend:** NestJS 11 (Modular, TypeScript), Prisma ORM.
+* **Database:** Serverless PostgreSQL on Neon.
+* **AI Engine:** Hugging Face Inference API (`Qwen2.5-7B-Instruct`).
+* **Authentication:** JWT tokens stored in HTTP-only cookies and localStorage, secured with role-based Route Guards.
+* **Reporting:** PDF fee statements generated client-side with `jsPDF`.
 
 ---
 
-## Features
-
-- **Roles:** Admin, Teacher, Student, Parent — scoped dashboards
-- **Modules:** Students, Teachers, Classes, Attendance, Grades, Fees (PKR), Notices
-- **AI Assistant:** Multi-step agent loop (up to 5 iterations), conversation memory, rate limiting
-- **Reports:** Fee report card + PDF export (admin)
-- **Landing page:** Marketing site at `/` with animated agentic chat demo
-
----
-
-## Quick start (local)
+## 💻 Quick Start (Local Setup)
 
 ### Prerequisites
+* Node.js v18 or higher
+* PostgreSQL instance or a free account on [Neon.tech](https://neon.tech)
+* A free [Hugging Face](https://huggingface.co) API Key
 
-- Node.js 18+
-- PostgreSQL (or [Neon](https://neon.tech) connection string)
-
-### 1. Backend
-
+### 1. Backend Service
 ```bash
 cd backend
-cp .env.example .env   # then fill DATABASE_URL, JWT_SECRET
+cp .env.example .env
+# Update .env with your DATABASE_URL and JWT_SECRET
 npm install
 npx prisma db push
 npx prisma db seed
 npx ts-node update-demo.ts
-npm run start:dev      # http://localhost:4000
+npm run start:dev
 ```
+*Runs locally on [http://localhost:4000](http://localhost:4000)*
 
-### 2. Frontend
-
+### 2. Frontend Web App
 ```bash
-cd frontend
+cd ../frontend
 cp .env.example .env.local
-# Set: NEXT_PUBLIC_API_URL=http://127.0.0.1:4000
-#      JWT_SECRET=(same as backend)
-#      HUGGINGFACE_API_KEY=hf_...
+# Update env variables:
+# NEXT_PUBLIC_API_URL=http://127.0.0.1:4000
+# JWT_SECRET=(Must match backend JWT_SECRET)
+# HUGGINGFACE_API_KEY=hf_... (your hugging face token)
 npm install
-npm run dev            # http://localhost:3000
+npm run dev
 ```
-
-### 3. Verify AI token
-
-```bash
-cd frontend
-node scripts/validate-hf-token.mjs
-```
-
-**Hugging Face:** [Create token](https://huggingface.co/settings/tokens) with **Inference Providers** enabled. If chat shows *“Invalid username or password”*, the HF key is expired — not your login.
+*Runs locally on [http://localhost:3000](http://localhost:3000)*
 
 ---
 
-## Deploy free (first time? start here)
+## 🌐 Free Production Deployment
 
-Simple step-by-step (GitHub + Vercel + Render + Neon): **[docs/DEPLOYMENT-FREE.md](docs/DEPLOYMENT-FREE.md)**
+We use 100% free hosting providers to publish this full-stack application online:
 
-| Service | Hosts |
-|---------|--------|
-| Vercel | `frontend/` (Next.js + `/api/chat`) |
-| Render | `backend/` (NestJS API) |
-| Neon | PostgreSQL |
+| Layer | Provider | Hosting Type | Link |
+|---|---|---|---|
+| **Database** | **Neon** | Serverless PostgreSQL | [neon.tech](https://neon.tech) |
+| **Backend** | **Render** | Node.js Web Service | [render.com](https://render.com) |
+| **Frontend** | **Vercel** | Next.js Serverless Platform | [vercel.com](https://vercel.com) |
 
----
-
-## Project structure
-
-```
-ai-school-assistant/
-├── frontend/          # Next.js 14 — UI, landing, /api/chat
-├── backend/           # NestJS — auth, CRUD, /tools/execute
-├── docs/              # Architecture, deployment, master guide
-└── README.md
-```
+> 📖 **Step-by-Step Instructions:** Follow the detailed [Free Deployment Guide](./docs/DEPLOYMENT-FREE.md) to set up your production database, deploy the API to Render, host the user interface on Vercel, and configure production environment variables.
 
 ---
 
-## Security
+## 📝 Demo Credentials (Seeded Data)
 
-- **Never commit** `.env` / `.env.local` (use `.env.example` only).
-- If secrets were pushed to GitHub, **rotate** Neon password, HF token, and `JWT_SECRET`, then remove files from git history:
+Log in using these pre-seeded accounts to experience role-specific dashboards:
 
-```bash
-git rm --cached backend/.env frontend/.env frontend/.env.local
-git commit -m "chore: stop tracking env files"
-```
-
-- `HUGGINGFACE_API_KEY` stays server-side on Vercel (not `NEXT_PUBLIC_*`).
-
----
-
-## Tests
-
-```bash
-cd frontend
-node test-chat-auth.mjs   # expects 401 without JWT
-```
+| Role | Email | Password | Allowed AI Tools |
+|---|---|---|---|
+| **Admin** | `admin@edunexus.com` | `admin123` | All (fee reports, student creation, attendance) |
+| **Teacher** | `teacher@edunexus.com` | `teacher123` | Class statistics, student profiles, attendance |
+| **Student** | `student@edunexus.com` | `student123` | _None (Dashboard access only)_ |
+| **Parent** | `parent@edunexus.com` | `parent123` | _None (Child portal view only)_ |
 
 ---
 
-## Roadmap (portfolio + product)
-
-- [ ] Live Vercel + Render URLs in README
-- [ ] Screenshots + 90s demo video
-- [ ] Playwright E2E (login + AI smoke)
-- [ ] GitHub Actions CI (lint + build)
-- [ ] Custom domain + Render always-on (paid) for client demos
+## 🔒 Security Policy
+* Never commit `.env` or `.env.local` configuration files containing active database credentials or API keys.
+* Ensure `HUGGINGFACE_API_KEY` is kept strictly server-side on Vercel and is not exposed with the `NEXT_PUBLIC_` prefix.
 
 ---
 
-## License
-
-MIT — use for portfolio and learning. Demo data is fictional.
-
----
-
-## Author
-
-Built as a **full-stack + agentic AI** showcase. Connect on LinkedIn / Upwork and link this repo + live demo.
+## 📄 License
+This project is licensed under the MIT License. Use it to build your portfolio and show off your agentic AI skills!

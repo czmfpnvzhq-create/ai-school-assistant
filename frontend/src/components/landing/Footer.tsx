@@ -24,9 +24,10 @@ export function Footer() {
             href="https://github.com/czmfpnvzhq-create/ai-school-assistant"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-slate-400 transition hover:text-white"
+            className="text-slate-400 transition hover:text-white flex items-center gap-2"
           >
             GitHub
+            <img src="https://img.shields.io/github/stars/czmfpnvzhq-create/ai-school-assistant?style=social" alt="stars" className="h-5" />
           </a>
           <a
             href="https://linkedin.com"

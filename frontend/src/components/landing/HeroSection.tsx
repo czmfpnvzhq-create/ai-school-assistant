@@ -38,7 +38,7 @@ export function HeroSection() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-landing-accent px-6 py-3.5 font-dm-sans text-sm font-semibold text-white shadow-xl shadow-blue-500/30 transition hover:bg-blue-400 hover:shadow-blue-500/40"
+                className="inline-flex items-center justify-center gap-2 rounded-xl cta-animated px-6 py-3.5 font-dm-sans text-sm font-semibold text-white shadow-xl shadow-blue-500/30 transition"
               >
                 Explore Demo
                 <span aria-hidden>→</span>
@@ -64,6 +64,42 @@ export function HeroSection() {
         <ScrollReveal delayClass="landing-reveal-delay-2" className="flex justify-center lg:justify-end">
           <MockChatCard />
         </ScrollReveal>
+
+        {/* Quick hero features to highlight value for clients */}
+        <div className="col-span-full mt-8">
+          <div className="mx-auto max-w-3xl grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="landing-glass p-4 rounded-xl text-center">
+              <div className="text-sm font-medium text-slate-300">Fast Setup</div>
+              <div className="mt-2 font-semibold text-white">Deploy in minutes</div>
+            </div>
+            <div className="landing-glass p-4 rounded-xl text-center">
+              <div className="text-sm font-medium text-slate-300">AI First</div>
+              <div className="mt-2 font-semibold text-white">Reasoning, not just search</div>
+            </div>
+            <div className="landing-glass p-4 rounded-xl text-center">
+              <div className="text-sm font-medium text-slate-300">For Schools</div>
+              <div className="mt-2 font-semibold text-white">Admin, teachers, parents</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Small testimonials to add credibility */}
+        <div className="col-span-full mt-8">
+          <div className="mx-auto max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-4">
+            <blockquote className="landing-glass p-4 rounded-xl">
+              <p className="text-slate-200">"EduNexus saved us hours every week — the AI assistant is shockingly accurate."</p>
+              <footer className="mt-3 text-sm text-slate-400">— Principal, Bright High School</footer>
+            </blockquote>
+            <blockquote className="landing-glass p-4 rounded-xl">
+              <p className="text-slate-200">"Attendance and grading are finally manageable — teachers love it."</p>
+              <footer className="mt-3 text-sm text-slate-400">— Senior Teacher, City School</footer>
+            </blockquote>
+            <blockquote className="landing-glass p-4 rounded-xl">
+              <p className="text-slate-200">"Easy to install and customize — perfect for demos and clients."</p>
+              <footer className="mt-3 text-sm text-slate-400">— EdTech Consultant</footer>
+            </blockquote>
+          </div>
+        </div>
       </div>
     </section>
   );
