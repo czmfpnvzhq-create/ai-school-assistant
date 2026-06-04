@@ -54,7 +54,7 @@ export class AuthService {
       role: user.role,
     };
 
-    const token = this.jwtService.sign(tokenPayload, { expiresIn: '1h' });
+    const token = this.jwtService.sign(tokenPayload, { expiresIn: '7d' });
 
     return {
       token,
@@ -94,7 +94,7 @@ export class AuthService {
       role: user.role,
     };
 
-    const token = this.jwtService.sign(tokenPayload, { expiresIn: '1h' });
+    const token = this.jwtService.sign(tokenPayload, { expiresIn: '7d' });
     const totalMs = Date.now() - started;
 
     if (totalMs > 300) {

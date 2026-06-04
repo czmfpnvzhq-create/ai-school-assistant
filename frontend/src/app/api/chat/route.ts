@@ -1,4 +1,8 @@
 import { NextResponse } from 'next/server';
+
+// Tell Vercel the maximum time this route is allowed to run.
+// Hobby (free) tier cap is 60 s — keep internal timeout ≤ this.
+export const maxDuration = 60;
 import { getCache, setCache, getCacheKey } from '@/lib/ai/cache';
 import { verifyChatToken } from '@/lib/ai/verify-chat-token';
 import type { AiUserContext } from '@/lib/prompts/system';
@@ -107,7 +111,7 @@ export async function POST(req: Request) {
         sendData(JSON.stringify({ type: "status", phase: "thinking" }));
 
         try {
-          const timeoutAt = Date.now() + 90_000;
+          const timeoutAt = Date.now() + 58_000; // Must be < Vercel 60 s cap
 
           const agentResult = await Promise.race([
             runAgentLoop(history, systemPrompt, token, {
@@ -126,7 +130,7 @@ export async function POST(req: Request) {
               },
             }),
             new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error("Timeout")), 90_000)
+              setTimeout(() => reject(new Error("Timeout")), 58_000) // Must be < Vercel 60 s cap
             ),
           ]);
 
