@@ -7,7 +7,7 @@ async function runTest() {
   console.log("🤖 STARTING LIVE AI SERVICE VERIFICATION TEST...");
   console.log("--------------------------------------------------");
   
-  const systemPrompt = getSystemPrompt("2026-05-19");
+  const systemPrompt = getSystemPrompt("2026-05-19", { name: "Admin", role: "ADMIN" } as any);
   const messages = [
     { role: "system", content: systemPrompt },
     { role: "user", content: "Show me the students in Class 6" }

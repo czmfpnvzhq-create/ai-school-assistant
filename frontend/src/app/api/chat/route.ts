@@ -1,16 +1,14 @@
-import { NextResponse } from "next/server";
-import { getSystemPrompt, type AiUserContext } from "@/lib/prompts/system";
-import { simulateStreamText } from "@/lib/ai/huggingface";
-import {
-  runAgentLoop,
-  getLastFeeToolRun,
-  type ChatMessage,
-} from "@/lib/ai/agent-loop";
-import { verifyChatToken } from "@/lib/ai/verify-chat-token";
-import { checkRateLimit } from "@/lib/ai/rate-limit";
-import { encodeSseData, SSE_RESPONSE_HEADERS } from "@/lib/ai/chat-sse";
-import { trimConversationHistory } from "@/lib/ai/conversation-history";
-import type { AiRole } from "@/lib/ai/tool-permissions";
+import { NextResponse } from 'next/server';
+import { getCache, setCache, getCacheKey } from '@/lib/ai/cache';
+import { verifyChatToken } from '@/lib/ai/verify-chat-token';
+import type { AiUserContext } from '@/lib/prompts/system';
+import { runAgentLoop, getLastFeeToolRun, type ChatMessage } from '@/lib/ai/agent-loop';
+import { getSystemPrompt } from '@/lib/prompts/system';
+import { simulateStreamText } from '@/lib/ai/huggingface';
+import { encodeSseData, SSE_RESPONSE_HEADERS } from '@/lib/ai/chat-sse';
+import { trimConversationHistory } from '@/lib/ai/conversation-history';
+import type { AiRole } from '@/lib/ai/tool-permissions';
+import { checkRateLimit } from '@/lib/ai/rate-limit';
 
 interface ChatRequestBody {
   messages: ChatMessage[];
@@ -48,6 +46,26 @@ export async function POST(req: Request) {
 
     const body = (await req.json()) as ChatRequestBody;
     const { messages, className } = body;
+    // Compute cache key based on messages (excluding system prompts)
+    const cacheKey = getCacheKey(messages);
+    const cachedAnswer = getCache(cacheKey);
+    if (cachedAnswer) {
+      // Stream cached answer quickly
+      const stream = new ReadableStream({
+        async start(controller) {
+          const sendData = (payload: string) => controller.enqueue(encodeSseData(payload));
+          // Send meta placeholder (no tool usage)
+          sendData(JSON.stringify({ type: "meta", toolCalled: null, toolArgs: null, toolResult: null, toolResults: [], toolsUsed: [], iterations: 0 }));
+          // Stream the cached answer text
+          for await (const chunk of simulateStreamText(cachedAnswer)) {
+            sendData(chunk);
+          }
+          sendData("[DONE]");
+          controller.close();
+        },
+      });
+      return new Response(stream, { headers: SSE_RESPONSE_HEADERS });
+    }
 
     if (!messages?.length) {
       return NextResponse.json(
@@ -69,7 +87,9 @@ export async function POST(req: Request) {
 
     // Client sends user/assistant only — system prompt is added server-side in runAgentLoop
     const history = trimConversationHistory(
-      messages.filter((m) => m.role === "user" || m.role === "assistant")
+      messages
+        .filter((m) => m.role === "user" || m.role === "assistant")
+        .map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
     );
 
     const stream = new ReadableStream({
@@ -132,16 +152,17 @@ export async function POST(req: Request) {
           );
 
           const answerText =
-            agentResult.finalAnswer.trim() ||
-            "I retrieved the school data but could not generate a summary. Please try again.";
-
-          for await (const chunk of simulateStreamText(answerText)) {
-            if (Date.now() > timeoutAt) {
-              sendError("AI service request timed out. Please try again.");
-              return;
+              agentResult.finalAnswer.trim() ||
+              "I retrieved the school data but could not generate a summary. Please try again.";
+            // Cache the answer for future requests
+            setCache(cacheKey, answerText);
+            for await (const chunk of simulateStreamText(answerText)) {
+              if (Date.now() > timeoutAt) {
+                sendError("AI service request timed out. Please try again.");
+                return;
+              }
+              if (chunk) sendData(chunk);
             }
-            if (chunk) sendData(chunk);
-          }
 
           sendData("[DONE]");
           controller.close();

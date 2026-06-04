@@ -15,7 +15,7 @@ export function clearApiCache(prefix?: string) {
     memoryCache.clear();
     return;
   }
-  for (const key of memoryCache.keys()) {
+  for (const key of Array.from(memoryCache.keys())) {
     if (key.startsWith(prefix)) memoryCache.delete(key);
   }
 }

@@ -2,7 +2,6 @@
 
 import React from "react";
 import {
-  downloadFeeReportPdf,
   type FeeReportData,
 } from "@/lib/reports/fee-report-pdf";
 
@@ -132,12 +131,13 @@ export function FeeReportCard({ data, userName }: FeeReportCardProps) {
       <div className="px-5 pb-5">
         <button
           type="button"
-          onClick={() =>
+          onClick={async () => {
+            const { downloadFeeReportPdf } = await import("@/lib/reports/fee-report-pdf");
             downloadFeeReportPdf(data, {
               generatedBy: userName,
               generatedAt: new Date(),
-            })
-          }
+            });
+          }}
           className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold py-2.5 transition-colors shadow-lg shadow-emerald-900/30"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
