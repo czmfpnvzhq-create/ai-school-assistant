@@ -79,23 +79,23 @@ graph TD
 ```bash
 cd backend
 cp .env.example .env
-# Update .env with your DATABASE_URL and JWT_SECRET
+# Update .env with your DATABASE_URL, JWT_SECRET, and FRONTEND_URL
 npm install
+npx prisma generate
 npx prisma db push
 npx prisma db seed
-npx ts-node update-demo.ts
 npm run start:dev
 ```
 *Runs locally on [http://localhost:4000](http://localhost:4000)*
 
 ### 2. Frontend Web App
 ```bash
-cd ../frontend
+cd frontend
 cp .env.example .env.local
-# Update env variables:
-# NEXT_PUBLIC_API_URL=http://127.0.0.1:4000
-# JWT_SECRET=(Must match backend JWT_SECRET)
-# HUGGINGFACE_API_KEY=hf_... (your hugging face token)
+# Update .env.local:
+#   NEXT_PUBLIC_API_URL=http://127.0.0.1:4000
+#   JWT_SECRET=(must match backend JWT_SECRET exactly)
+#   HUGGINGFACE_API_KEY=hf_...
 npm install
 npm run dev
 ```
@@ -103,17 +103,61 @@ npm run dev
 
 ---
 
-## 🌐 Free Production Deployment
+## 🌐 Free Production Deployment (100% Free)
 
-We use 100% free hosting providers to publish this full-stack application online:
+| Layer | Provider | Notes |
+|---|---|---|
+| **Database** | **Neon** (already live) | Serverless PostgreSQL — free forever tier |
+| **Backend** | **Render** | Free web service — spins down after 15 min idle, wakes on request |
+| **Frontend** | **Vercel** | Best-in-class Next.js hosting — free hobby tier |
 
-| Layer | Provider | Hosting Type | Link |
-|---|---|---|---|
-| **Database** | **Neon** | Serverless PostgreSQL | [neon.tech](https://neon.tech) |
-| **Backend** | **Render** | Node.js Web Service | [render.com](https://render.com) |
-| **Frontend** | **Vercel** | Next.js Serverless Platform | [vercel.com](https://vercel.com) |
+### Step 1 — Deploy Backend on Render
 
-> 📖 **Step-by-Step Instructions:** Follow the detailed [Free Deployment Guide](./docs/DEPLOYMENT-FREE.md) to set up your production database, deploy the API to Render, host the user interface on Vercel, and configure production environment variables.
+1. Go to [render.com](https://render.com) → Sign up with GitHub (free, no credit card).
+2. Click **New → Web Service** → Connect your GitHub repo.
+3. Fill in:
+   - **Root Directory:** `backend`
+   - **Build Command:** `npm install && npx prisma generate && npm run build`
+   - **Start Command:** `npm run start:prod`
+   - **Instance Type:** Free
+4. Add these **Environment Variables** in the Render dashboard:
+
+   | Variable | Value |
+   |---|---|
+   | `NODE_ENV` | `production` |
+   | `DATABASE_URL` | your Neon connection string |
+   | `JWT_SECRET` | a long random string (32+ chars) |
+   | `FRONTEND_URL` | your Vercel URL (set after Step 2) |
+   | `HUGGINGFACE_API_KEY` | your HuggingFace token |
+
+5. Click **Deploy**. Note the URL (e.g., `https://edunexus-backend.onrender.com`).
+6. Go back and update `FRONTEND_URL` after Vercel is set up.
+
+> ⚠️ **Render Cold Starts:** The free tier sleeps after 15 minutes of inactivity. The first request after sleeping takes ~30 seconds to wake up. This is normal for free hosting. For a portfolio demo, this is acceptable.
+
+### Step 2 — Deploy Frontend on Vercel
+
+1. Go to [vercel.com](https://vercel.com) → Sign up with GitHub (free).
+2. Click **Add New Project** → Import your GitHub repo.
+3. Set **Root Directory** to `frontend`.
+4. Add these **Environment Variables** in the Vercel dashboard:
+
+   | Variable | Value |
+   |---|---|
+   | `NEXT_PUBLIC_API_URL` | your Render backend URL (from Step 1) |
+   | `JWT_SECRET` | **exact same value** as backend |
+   | `HUGGINGFACE_API_KEY` | your HuggingFace token |
+   | `DATABASE_URL` | your Neon connection string |
+
+5. Click **Deploy**. Your app is live!
+
+### Step 3 — Update CORS on Render
+
+Go back to your Render service → Environment Variables → set:
+```
+FRONTEND_URL = https://your-app.vercel.app
+```
+Then trigger a manual redeploy on Render.
 
 ---
 
@@ -132,7 +176,14 @@ Log in using these pre-seeded accounts to experience role-specific dashboards:
 
 ## 🔒 Security Policy
 * Never commit `.env` or `.env.local` configuration files containing active database credentials or API keys.
-* Ensure `HUGGINGFACE_API_KEY` is kept strictly server-side on Vercel and is not exposed with the `NEXT_PUBLIC_` prefix.
+* Ensure `HUGGINGFACE_API_KEY` is kept strictly server-side and is **not** exposed with the `NEXT_PUBLIC_` prefix.
+* The `JWT_SECRET` in the frontend is used only server-side (in Next.js API Routes) — it is never sent to the browser.
+
+---
+
+## ✅ Health Check
+
+Backend health endpoint: `GET /health` → returns `{ "status": "ok" }`
 
 ---
 
