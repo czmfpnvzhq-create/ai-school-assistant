@@ -1,0 +1,22 @@
+{
+  "name": "ai-school-assistant-cf",
+  "version": "1.0.0",
+  "description": "Cloudflare Workers backend for AI School Assistant",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "itty-router": "^5.0.17",
+    "jose": "^5.2.3",
+    "postgres": "^3.4.4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240405.0",
+    "@types/bcryptjs": "^2.4.6",
+    "typescript": "^5.4.5",
+    "wrangler": "^3.50.0"
+  }
+}
